@@ -14,8 +14,8 @@ def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
 
     app = Flask(__name__)
-    app.config.from_pyfile("env.cfg")
-    app.debug = True
+    if test_config is not None:
+        app.config.from_pyfile("env.cfg")
     app.config["APP_ROOT"] = os.path.abspath(os.path.dirname(__file__))
 
     # Compress text, css, xml, json responeses
