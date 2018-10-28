@@ -5,7 +5,6 @@ seoulai.com
 """
 from abc import ABC
 from abc import abstractmethod
-import json
 
 
 class Agent(ABC):
@@ -35,8 +34,8 @@ class ConcreteAgent(Agent):
             name: name of agent.
             ptype: type of piece that agent is responsible for.
         """
-        super().__init__(info['name'])
-        self.init_cash = info['cash']
+        super().__init__(info["name"])
+        self.init_cash = info["cash"]
 
 
 class AgentList():

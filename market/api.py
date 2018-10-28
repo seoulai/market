@@ -3,8 +3,7 @@ Cinyoung Hur, cinyoung.hur@gmail.com
 seoulai.com
 2018
 """
-from flask import Blueprint, request, jsonify, make_response
-from flask_cors import cross_origin
+from flask import Blueprint, request, jsonify
 from market.base import fee_rt
 from market.agents import ConcreteAgent, agent_list
 
@@ -27,10 +26,10 @@ def register():
 @api_route.route("/step", methods=["POST"])
 def step():
     post_data = request.get_json()
-    agent = post_data.get('agent')
-    decision = post_data.get('decision')
-    price = post_data.get('price')
-    qty = post_data.get('qty')
+    agent = post_data.get("agent")
+    decision = post_data.get("decision")
+    price = post_data.get("price")
+    qty = post_data.get("qty")
 
     new_state, reward, done, info = _step(
         agent,
@@ -54,10 +53,10 @@ def _step(
         decision,
         price: float,
         qty: int):
+    new_state = {}
     reward = 0
     done = False
     info = {}
-    new_state = {}
 
     # concluded price. (체결가격)
     ccld_price = price
@@ -67,5 +66,7 @@ def _step(
     # total amount of moved money. (거래금액)
     trading_amt = ccld_price * ccld_qty
     fee = trading_amt * fee_rt
+    if fee > 0:
+        pass
 
     return new_state, reward, done, info

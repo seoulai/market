@@ -1,0 +1,6 @@
+include LICENSE
+recursive-include market *.py
+include README.md
+include requirements.txt
+graft tests
+global-exclude *.pyc
