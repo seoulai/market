@@ -6,3 +6,5 @@ Flask-SQLAlchemy==2.3.2
 PyMySQL==0.9.2
 pytest==3.9.3
 SQLAlchemy==1.2.12
+flake8==3.6.0
+flake8-quotes==1.0.0
