@@ -36,7 +36,7 @@ def create_app(test_config=None):
     # routes
     from market.api import api_route
 
-    # routes cluster
+    # routes api
     app.register_blueprint(api_route)
 
     return app
