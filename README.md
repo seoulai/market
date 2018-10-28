@@ -1,5 +1,7 @@
 # Reinforcement Learning Market environment
 
+[![Build Status](https://api.travis-ci.com/seoulai/market.svg?branch=master)](https://travis-ci.com/seoulai/market)
+
 ## Install
 
 Create a virtualenv and activate it::

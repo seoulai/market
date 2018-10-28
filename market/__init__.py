@@ -14,7 +14,7 @@ def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
 
     app = Flask(__name__)
-    if test_config is not None:
+    if test_config is None:
         app.config.from_pyfile("env.cfg")
     app.config["APP_ROOT"] = os.path.abspath(os.path.dirname(__file__))
 
