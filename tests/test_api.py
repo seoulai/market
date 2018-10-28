@@ -6,7 +6,7 @@ seoulai.com
 import pytest
 import logging
 import json
-
+from pathlib import Path
 from market import create_app
 
 
@@ -21,7 +21,7 @@ def client(request):
     """Create and configure a new app instance for each test."""
     app = create_app({"TESTING": True})
 
-    app.config.from_pyfile("env.cfg")
+    app.config.from_pyfile(Path(__file__).parent / 'test.cfg')
     log.debug("setup: create test client")
     return app.test_client()
 
