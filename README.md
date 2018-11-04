@@ -18,6 +18,10 @@ Install Flaskr::
 
     $ pip install -e .
 
+Update config for database URI::
+
+    $ cp market/env.default.cfg market/env.cfg
+
 ## Run
 
 ::
