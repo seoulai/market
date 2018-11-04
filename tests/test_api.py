@@ -52,7 +52,15 @@ class Test_env():
         assert rv.status_code == 200
 
     def test_step(self, client):
-        data = dict(agent="agent1",
+        agent = dict(
+            name="agent1",
+            cash=100000,
+            asset_qty=0.0,
+            asset_val=0.0,
+            invested=False,  # ?
+            bah_base=0
+        )
+        data = dict(agent=agent,
                     decision="buy",
                     price=10.2,
                     qty=2
