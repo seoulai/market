@@ -36,6 +36,11 @@ class ConcreteAgent(Agent):
         """
         super().__init__(info["name"])
         self.init_cash = info["cash"]
+        self.cash = info["cash"]
+        self.asset_qty = info["asset_qty"]
+        self.asset_val = info["asset_val"]
+        self.invested = info["invested"]
+        self.bah_base = info["bah_base"]
 
 
 class AgentList():

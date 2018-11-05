@@ -43,13 +43,20 @@ class Test_env():
     """
 
     def test_register(self, client):
-        data = dict(name="agent1",
-                    cash=100000
-                    )
-        rv = client.post("/api/register",
+        data = dict(
+            name="agent1",
+            cash=100000,
+            asset_qty=0.0,
+            asset_val=0.0,
+            invested=False,  # ?
+            bah_base=0
+        )
+        rv = client.post("/api/reset",
                          content_type="application/json",
                          data=json.dumps(data))
         assert rv.status_code == 200
+        assert all([a == b for a, b in zip(json_of_response(rv).keys(),
+                                           ["state"])])
 
     def test_step(self, client):
         agent = dict(
@@ -69,3 +76,5 @@ class Test_env():
                          content_type="application/json",
                          data=json.dumps(data))
         assert rv.status_code == 200
+        assert all([a == b for a, b in zip(json_of_response(rv).keys(),
+                                           ["done", "info", "new_state", "reward"])])

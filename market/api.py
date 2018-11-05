@@ -15,12 +15,16 @@ api_route = Blueprint(
 )
 
 
-@api_route.route("/register", methods=["POST"])
+@api_route.route("/reset", methods=["POST"])
 def register():
     post_data = request.get_json()
     agent = ConcreteAgent(post_data)
     agent_list.add(agent)
-    return "Agent is registered"
+    state = dict(
+        columns=list("abcdefghij"),
+        data=np.random.random_sample((20, 10)).tolist(),
+        fee_rt=fee_rt)
+    return jsonify(state=state)
 
 
 @api_route.route("/step", methods=["POST"])
@@ -43,17 +47,11 @@ def step():
                    )
 
 
-@api_route.route("/reset")
-def reset():
-    pass
-
-
 def _step(
         agent,
         decision,
         price: float,
         qty: int):
-    new_state = {}
     reward = 0
     done = False
     info = {}
