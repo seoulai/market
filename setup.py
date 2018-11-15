@@ -24,6 +24,7 @@ setup(
         "Flask-SQLAlchemy",
         "PyMySQL",
         "SQLAlchemy",
+        "numpy",
         "flake8",
         "flake8-quotes"
     ],
