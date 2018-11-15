@@ -1,7 +1,6 @@
 # Config
 market/env.cfg
 deploy.json
-fabfile.py
 
 # Environment
 venv
