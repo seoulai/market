@@ -14,16 +14,22 @@ api_route = Blueprint(
     url_prefix="/api"
 )
 
+max_qty = 10_000_000
+
 
 @api_route.route("/reset", methods=["POST"])
 def register():
     post_data = request.get_json()
     agent = ConcreteAgent(post_data)
+    # TODO: register agent to database
     agent_list.add(agent)
     state = dict(
-        columns=list("abcdefghij"),
-        data=np.random.random_sample((20, 10)).tolist(),
-        fee_rt=fee_rt)
+        order_book=np.sort(np.random.random_sample(21)*100).tolist(),
+        agent_info=dict(cash=100_000_000,
+                        asset_qtys=dict(ticker="KRW-BTC",
+                                        asset_qty=max_qty)),
+        statistics=dict(ma10=100.0, std10=5.0)
+    )
     return jsonify(state=state)
 
 
@@ -110,9 +116,12 @@ def _step(
     # FIXME: read price from database
     # we just observe state_size time series data.
     new_state = dict(
-        columns=list("abcdefghij"),
-        data=np.random.random_sample((20, 10)).tolist(),
-        fee_rt=fee_rt)
+        order_book=np.sort(np.random.random_sample(21)*100).tolist(),
+        agent_info=dict(cash=agent.cash,
+                        asset_qtys=dict(ticker="KRW-BTC",
+                                        asset_qty=max_qty)),
+        statistics=dict(ma10=100.0, std10=5.0)
+    )
 
     info["priv_pflo_value"] = priv_pflo_value
     info["cur_pflo_value"] = cur_pflo_value
