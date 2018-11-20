@@ -31,27 +31,27 @@ Update config for database URI::
 
 ## Run
 
-::
+On Linux::
 
     $ export FLASK_APP=market
     $ export FLASK_ENV=development
+    $ flask init-db
     $ flask run
 
 Or on Windows cmd::
 
     > set FLASK_APP=market
     > set FLASK_ENV=development
+    > flask init-db
     > flask run
 
 ## Test
 
-::
-
     $ pip install '.[test]'
-    $ pytest
+    $ pytest -m market -s
 
-Run with coverage report::
+## Deploy
 
-    $ coverage run -m pytest
-    $ coverage report
-    $ coverage html  # open htmlcov/index.html in a browser
+Update config for remote host::
+
+    $ cp deploy.default.json deploy.json

@@ -1,0 +1,9 @@
+{
+  "API_PROJECT_NAME": "market",
+  "API_REPO_URL": "https://github.com/seoulai/market",
+
+  "REMOTE_HOST": "x.x.x.x",
+  "REMOTE_HOST_SSH": "x.x.x.x",
+  "REMOTE_USER": "username",
+  "REMOTE_PROJECT_FOLDER": "/path/to/dir/"
+}
