@@ -7,6 +7,8 @@ from flask import Blueprint, request, jsonify
 from market.base import fee_rt, Constants, DotDict
 from market.agents import ConcreteAgent, agent_list
 import numpy as np
+from market.db import get_db
+
 
 api_route = Blueprint(
     "api_route",
@@ -23,6 +25,8 @@ def register():
     agent = ConcreteAgent(post_data)
     # TODO: register agent to database
     agent_list.add(agent)
+    db = get_db()
+    db.execute("select 1")
     state = dict(
         order_book=np.sort(np.random.random_sample(21)*100).tolist(),
         agent_info=dict(cash=100_000_000,

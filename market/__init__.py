@@ -17,7 +17,9 @@ def create_app(test_config=None):
     if test_config is None:
         app.config.from_pyfile("env.cfg")
     app.config["APP_ROOT"] = os.path.abspath(os.path.dirname(__file__))
-
+    app.config["SECRET_KEY"] = "key"
+    app.config["DATABASE"] = os.path.join(
+        app.config["APP_ROOT"], "market.sqlite")
     # Compress text, css, xml, json responeses
     Compress(app)
 
@@ -25,10 +27,9 @@ def create_app(test_config=None):
     def hello():
         return "Market Environment"
 
-    # Database
-    # app.config["SQLALCHEMY_DATABASE_URI"] = app.config["SQLALCHEMY_DATABASE_URI"]
-    # app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    # db = SQLAlchemy(app)
+    # register the database commands
+    from market import db
+    db.init_app(app)
 
     # route Cross Origin Resource Sharing (CORS)
     # CORS(app, resources={r"/*": {"origins": "*"}})

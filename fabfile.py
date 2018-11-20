@@ -111,4 +111,4 @@ def _update_env_api(branch):
 def _restart_api(branch):
     api_project_folder = _set_path(branch)
     with _virtualenv(api_project_folder):
-        run("export FLASK_APP=market; flask run --host=0.0.0.0")
+        run("export FLASK_APP=market; flask init-db; flask run --host=0.0.0.0")
