@@ -23,3 +23,28 @@ class Agents(db.Model):
                 "val": self.portfolio_rets_val,
                 "mdd": self.portfolio_rets_mdd,
                 "sharp": self.portfolio_rets_sharp})
+
+
+class OrderBook(db.Model):
+    ts = db.Column(db.Integer, primary_key=True)
+    buy10 = db.Column(db.Float)
+    buy9 = db.Column(db.Float)
+    buy8 = db.Column(db.Float)
+    buy7 = db.Column(db.Float)
+    buy6 = db.Column(db.Float)
+    buy5 = db.Column(db.Float)
+    buy4 = db.Column(db.Float)
+    buy3 = db.Column(db.Float)
+    buy2 = db.Column(db.Float)
+    buy1 = db.Column(db.Float)
+    current = db.Column(db.Float)
+    sell1 = db.Column(db.Float)
+    sell2 = db.Column(db.Float)
+    sell3 = db.Column(db.Float)
+    sell4 = db.Column(db.Float)
+    sell5 = db.Column(db.Float)
+    sell6 = db.Column(db.Float)
+    sell7 = db.Column(db.Float)
+    sell8 = db.Column(db.Float)
+    sell9 = db.Column(db.Float)
+    sell10 = db.Column(db.Float)
