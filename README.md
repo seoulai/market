@@ -27,7 +27,9 @@ Install Flaskr::
 
 Update config for database URI::
 
-    $ cp market/env.default.cfg market/env.cfg
+    $ python
+    >> from market import db
+    >> db.create_all()
 
 ## Run
 
@@ -35,14 +37,12 @@ On Linux::
 
     $ export FLASK_APP=market
     $ export FLASK_ENV=development
-    $ flask init-db
     $ flask run
 
 Or on Windows cmd::
 
     > set FLASK_APP=market
     > set FLASK_ENV=development
-    > flask init-db
     > flask run
 
 ## Test
