@@ -4,7 +4,8 @@ James Park, laplacian.k@gmail.com
 seoulai.com
 2018
 """
-fee_rt = 0.01
+fee_rt = 0.05/100
+tick = 1000.0 
 
 
 class Constants(object):

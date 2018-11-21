@@ -19,41 +19,113 @@ api_route = Blueprint(
 max_qty = 10_000_000
 
 
-@api_route.route("/reset", methods=["POST"])
-def register():
-    post_data = request.get_json()
-    agent = ConcreteAgent(post_data)
-    # TODO: register agent to database
-    agent_list.add(agent)
-    db = get_db()
-    db.execute("select 1")
+@api_route.route("/select", methods=["GET"])
+def select():
+    get_data = request.get_json()
+    exchange = get_data.get("exchange")
+    # select fee_rt from exchanges where exchange_name = 'Upbit'
+    return jsonify(fee_rt = fee_rt)
+
+# @api_route.route("/reset", methods=["POST"])
+# def register():
+#     post_data = request.get_json()
+#     agent = ConcreteAgent(post_data)
+#     # TODO: register agent to database
+#     agent_list.add(agent)
+#     db = get_db()
+#     db.execute("select 1")
+#     state = dict(
+#         order_book=np.sort(np.random.random_sample(21)*100).tolist(),
+#         agent_info=dict(cash=100_000_000,
+#                         asset_qtys=dict(ticker="KRW-BTC",
+#                                         asset_qty=max_qty)),
+#         statistics=dict(ma10=100.0, std10=5.0),
+#         portfolio_ret=dict(value=100_000_000, mdd=0.0, sharp=0.0),
+#     )
+#     return jsonify(state=state)
+
+@api_route.route("/reset", methods=["GET"])
+def reset():
+    get_data = request.get_json()
+    agent_id = get_data.get("agent_id")
+
     state = dict(
         order_book=np.sort(np.random.random_sample(21)*100).tolist(),
-        agent_info=dict(cash=100_000_000,
-                        asset_qtys=dict(ticker="KRW-BTC",
-                                        asset_qty=max_qty)),
-        statistics=dict(ma10=100.0, std10=5.0)
+        statistics=dict(ma10=100.0, std10=5.0),
     )
+
+    db_data = dict(
+        seoul_ai=dict(
+            agent_info={"cash":100_000_000, "asset_qtys":{"KRW-BTC":0.0}},
+            portfolio_rets={"val":100_000_000, "mdd":0.0, "sharp":0.0}),
+        another_user=dict(
+            agent_info={"cash":100_000_000, "asset_qtys":{"KRW-BTC":0.0}},
+            portfolio_rets={"val":100_000_000, "mdd":0.0, "sharp":0.0}),
+        )
+    agent_data = db_data[agent_id]
+    state.update(agent_data)
+
     return jsonify(state=state)
 
+@api_route.route("/scrap", methods=["GET"])
+def scrap():
+    get_data = request.get_json()
+    start_time = get_data.get("start_time")
+    end_time= get_data.get("end_time")
 
+    # if start_time == "hh:mm:ss" and end_time == "hh:mm:ss":
+    #     select state from redis cache table
+    # else
+    #     select state from log_table where time_stamp >= start_time and time_stamp <= end_time
+
+    scraped_data = dict(
+        order_book=np.sort(np.random.random_sample(21)*100).tolist(),
+        statistics=dict(ma10=100.0, std10=5.0),
+    )
+
+    return jsonify(scraped_data=scraped_data)
+    
 @api_route.route("/step", methods=["POST"])
 def step():
     post_data = request.get_json()
-    agent = DotDict(post_data.get("agent"))
+    # agent = DotDict(post_data.get("agent"))
+    agent_id = post_data.get("agent_id") 
+    ticker = post_data.get("ticker") 
     decision = post_data.get("decision")
-    price = post_data.get("price")
-    qty = post_data.get("qty")
+    trad_qty = post_data.get("trad_qty")
+    trad_price = post_data.get("trad_price")
 
-    new_state, reward, done, info = _step(
-        agent,
-        decision,
-        price,
-        qty)
-    return jsonify(new_state=new_state,
-                   reward=reward,
-                   done=done,
-                   info=info
+    # next_state, reward, done, info = _step(
+    #     agent_id,
+    #     ticker,
+    #     decision,
+    #     price,
+    #     qty)
+
+    # conclude(agent_id, ticker, decision, trad_qty, trad_price)
+    # reward = simulate(agent_id, ticker, decision, trad_qty, trad_price)
+    # done = gameover(agent_id, ticker, decision, trad_qty, trad_price)
+
+    next_state = dict(
+        order_book=np.sort(np.random.random_sample(21)*100).tolist(),
+        statistics=dict(ma10=100.0, std10=5.0),
+    )
+
+    db_data = dict(
+        seoul_ai=dict(
+            agent_info={"cash":100_000_000, "asset_qtys":{"KRW-BTC":0.0}},
+            portfolio_rets={"val":100_000_000, "mdd":0.0, "sharp":0.0}),
+        another_user=dict(
+            agent_info={"cash":100_000_000, "asset_qtys":{"KRW-BTC":0.0}},
+            portfolio_rets={"val":100_000_000, "mdd":0.0, "sharp":0.0}),
+        )
+    agent_data = db_data[agent_id]
+    next_state.update(agent_data)
+
+    return jsonify(next_state=next_state,
+                   reward=1.0,
+                   done=False,
+                   info="info"
                    )
 
 
@@ -119,12 +191,13 @@ def _step(
 
     # FIXME: read price from database
     # we just observe state_size time series data.
-    new_state = dict(
+    next_state = dict(
         order_book=np.sort(np.random.random_sample(21)*100).tolist(),
         agent_info=dict(cash=agent.cash,
                         asset_qtys=dict(ticker="KRW-BTC",
                                         asset_qty=max_qty)),
-        statistics=dict(ma10=100.0, std10=5.0)
+        statistics=dict(ma10=100.0, std10=5.0),
+        portfolio_ret=dict(value=10_000_000, mdd=0.0, sharp=0.0),
     )
 
     info["priv_pflo_value"] = priv_pflo_value
@@ -135,4 +208,4 @@ def _step(
     info["portfolio_value"] = cur_pflo_value
     info["msg"] = msg
 
-    return new_state, reward, done, info
+    return next_state, reward, done, info
