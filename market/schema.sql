@@ -1,14 +1,22 @@
 -- Initialize the database.
 -- Drop any existing data and create empty tables.
 
-DROP TABLE IF EXISTS agent;
+DROP TABLE IF EXISTS agents;
 DROP TABLE IF EXISTS orderbook;
 
-CREATE TABLE agent (
+CREATE TABLE agents (
   id INTEGER PRIMARY KEY AUTOINCREMENT
-  , username TEXT UNIQUE NOT NULL
-  , cash FLOAT NOT NULL
+  , name TEXT UNIQUE NOT NULL
+  , cash FLOAT DEFAULT 100000000
+  , asset_qtys_currency  VARCHAR(100) DEFAULT "KRW-BTC"
+  , asset_qtys FLOAT DEFAULT 0.0
+  , portfolio_rets_val INTEGER DEFAULT 100000000
+  , portfolio_rets_mdd FLOAT DEFAULT 0.0
+  , portfolio_rets_sharp FLOAT DEFAULT 0.0
 );
+
+INSERT INTO agents (name)
+VALUES ("seoul_ai"), ("another_user");
 
 CREATE TABLE orderbook (
     timestamp INTEGER PRIMARY KEY ASC

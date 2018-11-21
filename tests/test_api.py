@@ -7,8 +7,8 @@ import pytest
 import logging
 import json
 from pathlib import Path
-from market import create_app
-
+from market import app, db
+from market.model import Agents
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger("market-test")
@@ -19,9 +19,10 @@ xfail = pytest.mark.xfail
 @pytest.fixture(scope="class", autouse=True)
 def client(request):
     """Create and configure a new app instance for each test."""
-    app = create_app({"TESTING": True})
-
-    app.config.from_pyfile(Path(__file__).parent / "test.cfg")
+    # TODO: use seperate db
+    db.drop_all()
+    db.create_all()
+    # app.config.from_pyfile(Path(__file__).parent / "test.cfg")
     log.debug("setup: create test client")
     return app.test_client()
 
@@ -44,13 +45,10 @@ class Test_env():
 
     def test_register(self, client):
         data = dict(
-            name="agent1",
-            cash=100000,
-            asset_qty=0.0,
-            asset_val=0.0,
-            invested=False,  # ?
-            bah_base=0
+            agent_id="test_agent",
         )
+        # Delete test_agent
+        Agents.query.filter_by(name=data["agent_id"]).delete()
         rv = client.post("/api/reset",
                          content_type="application/json",
                          data=json.dumps(data))
@@ -59,22 +57,15 @@ class Test_env():
                                            ["state"])])
 
     def test_step(self, client):
-        agent = dict(
-            name="agent1",
-            cash=100000,
-            asset_qty=0.0,
-            asset_val=0.0,
-            invested=False,  # ?
-            bah_base=0
-        )
-        data = dict(agent=agent,
+        data = dict(agent_id="test_agent",
                     decision="buy",
-                    price=10.2,
-                    qty=2
+                    ticker=1,
+                    trad_price=10.2,
+                    trad_qty=2
                     )
         rv = client.post("/api/step",
                          content_type="application/json",
                          data=json.dumps(data))
         assert rv.status_code == 200
         assert all([a == b for a, b in zip(json_of_response(rv).keys(),
-                                           ["done", "info", "new_state", "reward"])])
+                                           ["done", "info", "next_state", "reward"])])

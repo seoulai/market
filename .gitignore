@@ -1,7 +1,7 @@
 # Config
 market/env.cfg
 deploy.json
-
+market.sqlite
 # Environment
 venv
 
