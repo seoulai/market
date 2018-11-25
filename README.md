@@ -21,7 +21,17 @@ Or on Windows cmd::
     $ TODO: fill in
     $ TODO
 
-Install Flaskr::
+Install TA-Lib::
+
+    Download {ta-lib-0.4.0-src.tar.gz](http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz) and:
+
+    $ tar -xzf ta-lib-0.4.0-src.tar.gz
+    $ cd ta-lib/
+    $ ./configure --prefix=/usr
+    $ make
+    $ sudo make install
+
+Install market::
 
     $ pip install -e .
 

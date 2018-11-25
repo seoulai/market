@@ -1,10 +1,16 @@
 language: python
 
 python:
- - "3.6"
+  - "3.6"
+
+before_install:
+  - curl -L http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz --output
+    ta-lib-0.4.0-src.tar.gz
+  - tar zxf ta-lib-0.4.0-src.tar.gz
+  - cd ta-lib && ./configure --prefix=/usr && make && sudo make install && cd ..
 
 install: pip3 install -e .
 
 script:
-  - flake8
+  - flake8 market tests
   - pytest

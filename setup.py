@@ -26,7 +26,8 @@ setup(
         "SQLAlchemy",
         "numpy",
         "flake8",
-        "flake8-quotes"
+        "flake8-quotes",
+        "TA-Lib"
     ],
     extras_require={
         "test": [

@@ -27,41 +27,44 @@ def select():
     return jsonify(fee_rt=fee_rt)
 
 
-@api_route.route("/reset", methods=["POST"])
+@api_route.route("/reset", methods=["GET"])
 def reset():
     get_data = request.get_json()
     agent_id = get_data.get("agent_id")
+    if agent_id is None:
+        return make_response(jsonify({"msg": "no agent_id provided"}), 400)
 
     agent_data = _add_agent(agent_id)
     if agent_data:
-        state = dict(
+        obs = dict(
             order_book=np.sort(np.random.random_sample(21) * 100).tolist(),
             statistics=dict(ma10=100.0, std10=5.0),
         )
 
-        state.update(agent_data)
-        return jsonify(state=state)
+        obs.update(agent_data)
+        return jsonify(obs=obs)
     else:
-        return make_response(jsonify({"msg": "agent is already registered"}), 400)
+        return make_response(jsonify({"msg": "agent is not registered"}), 400)
 
 
 @api_route.route("/scrap", methods=["GET"])
 def scrap():
-    # get_data = request.get_json()
-    # start_time = get_data.get("start_time")
-    # end_time= get_data.get("end_time")
+    get_data = request.get_json()
+    start_time = get_data.get("start_time")
+    end_time = get_data.get("end_time")
 
-    # if start_time == "hh:mm:ss" and end_time == "hh:mm:ss":
+    if start_time == "hh:mm:ss" and end_time == "hh:mm:ss":
+        pass
     #     select state from redis cache table
     # else
     #     select state from log_table where time_stamp >= start_time and time_stamp <= end_time
 
-    scraped_data = dict(
+    history = dict(
         order_book=np.sort(np.random.random_sample(21) * 100).tolist(),
         statistics=dict(ma10=100.0, std10=5.0),
     )
 
-    return jsonify(scraped_data=scraped_data)
+    return jsonify(history=history)
 
 
 @api_route.route("/step", methods=["POST"])
@@ -77,20 +80,21 @@ def step():
     if agent is None:
         return make_response(jsonify({"msg": "agent is not exist"}), 400)
 
-    _conclude(agent, ticker, decision, trad_qty, trad_price)
+    next_obs, reward, done, info = _conclude(
+        agent, ticker, decision, trad_qty, trad_price)
     reward = _simulate(agent, ticker, decision, trad_qty, trad_price)
     done = _gameover(agent, ticker, decision, trad_qty, trad_price)
 
-    next_state = dict(
+    next_obs = dict(
         order_book=np.sort(np.random.random_sample(21) * 100).tolist(),
         statistics=dict(ma10=100.0, std10=5.0),
     )
-    next_state.update(agent._asdict())
+    next_obs.update(agent._asdict())
 
-    return jsonify(next_state=next_state,
+    return jsonify(next_obs=next_obs,
                    reward=reward,
                    done=done,
-                   info="info"
+                   info=info
                    )
 
 
@@ -165,7 +169,7 @@ def _conclude(
 
     # FIXME: read price from database
     # we just observe state_size time series data.
-    next_state = dict(
+    next_obs = dict(
         order_book=np.sort(np.random.random_sample(21) * 100).tolist(),
         agent_info=dict(cash=agent.cash,
                         asset_qtys=dict(ticker="KRW-BTC",
@@ -182,7 +186,7 @@ def _conclude(
     info["portfolio_value"] = cur_pflo_value
     info["msg"] = msg
 
-    return next_state, reward, done, info
+    return next_obs, reward, done, info
 
 
 def _get_agent(agent_id):
@@ -192,13 +196,14 @@ def _get_agent(agent_id):
 
 def _add_agent(agent_id):
     ret = Agents.query.filter_by(name=agent_id).scalar()
+    agent_data = dict(
+        agent_info={"cash": 100_000_000, "asset_qtys": {"KRW-BTC": 0.0}},
+        portfolio_rets={"val": 100_000_000, "mdd": 0.0, "sharp": 0.0})
+    # print(ret)
     if ret is not None:
-        return None
+        return agent_data
 
     db.session.add(Agents(name=agent_id))
     db.session.commit()
 
-    agent_data = dict(
-        agent_info={"cash": 100_000_000, "asset_qtys": {"KRW-BTC": 0.0}},
-        portfolio_rets={"val": 100_000_000, "mdd": 0.0, "sharp": 0.0})
     return agent_data

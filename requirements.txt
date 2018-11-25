@@ -9,3 +9,4 @@ SQLAlchemy==1.2.12
 flake8==3.6.0
 flake8-quotes==1.0.0
 numpy==1.15.3
+TA-Lib==1.15.3
