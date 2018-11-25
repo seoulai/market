@@ -27,7 +27,9 @@ setup(
         "numpy",
         "flake8",
         "flake8-quotes",
-        "TA-Lib"
+        "TA-Lib",
+        "Flask_SocketIO",
+        "psycopg2-binary"
     ],
     extras_require={
         "test": [
