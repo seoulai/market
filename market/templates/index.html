@@ -2,7 +2,7 @@
 <html>
 <head>
     <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
-    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="static/js/application.js"></script>
 
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
@@ -10,7 +10,7 @@
 <body>
 <div class="container">
   <div class="jumbotron">
-    <h1>Seoul AI Trading Hackathon</h1>
+    <h1>Seoul AI Hackathon for Trading</h1>
   </div>
 </div>
     
@@ -18,12 +18,57 @@
 
 <div class="container" id="content">
     <div class="row">
-        <p>Asynchronous page updates will appear here:</p>
-        <h3>Number list:</h3>
-        <div id="log">
+        <div class="col-6 col-md-4">
+            <table class="table">
+                <thead>
+                    <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Agent</th>
+                    <th scope="col">Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                    <th scope="row">1</th>
+                    <td>Mark</td>
+                    <td>3%</td>
+                    </tr>
+                    <tr>
+                    <th scope="row">2</th>
+                    <td>Jacob</td>
+                    <td>2%</td>
+                    </tr>
+                    <tr>
+                    <th scope="row">3</th>
+                    <td>Larry</td>
+                    <td>1%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-6 col-md-4">
+            <table class="table">
+                <thead>
+                    <tr>
+                    <th colspan="2" scope="col">OrderBook</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                    <td>BidPrice</td>
+                    <td></td>
+                    </tr>
+                    <tr>
+                    <td></td>
+                    <td>AskPrice</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-6 col-md-4">
+            <div id="chart_div"></div>
+        </div>
     </div>
 </div>
-
-
 </body>
 </html>

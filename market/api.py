@@ -5,6 +5,8 @@ seoulai.com
 """
 from flask import Blueprint, request, jsonify, make_response
 import numpy as np
+import pandas as pd
+from talib import abstract
 from market.base import fee_rt, Constants
 from market.model import Agents
 from market import db
@@ -20,8 +22,7 @@ max_qty = 10_000_000
 
 @api_route.route("/select", methods=["GET"])
 def select():
-    get_data = request.get_json()
-    exchange = get_data.get("exchange")
+    exchange = request.args.get("exchange")
     if exchange != "Upbit":
         return make_response(jsonify({"msg": "exchange is not supported"}), 400)
     return jsonify(fee_rt=fee_rt)
@@ -29,16 +30,15 @@ def select():
 
 @api_route.route("/reset", methods=["GET"])
 def reset():
-    get_data = request.get_json()
-    agent_id = get_data.get("agent_id")
+    agent_id = request.args.get("agent_id")
     if agent_id is None:
         return make_response(jsonify({"msg": "no agent_id provided"}), 400)
 
     agent_data = _add_agent(agent_id)
     if agent_data:
         obs = dict(
-            order_book=np.sort(np.random.random_sample(21) * 100).tolist(),
-            statistics=dict(ma10=100.0, std10=5.0),
+            order_book=_get_orderbook(),
+            statistics=_get_statistics(tick_in_min=3)
         )
 
         obs.update(agent_data)
@@ -49,9 +49,8 @@ def reset():
 
 @api_route.route("/scrap", methods=["GET"])
 def scrap():
-    get_data = request.get_json()
-    start_time = get_data.get("start_time")
-    end_time = get_data.get("end_time")
+    start_time = request.args.get("start_time")
+    end_time = request.args.get("end_time")
 
     if start_time == "hh:mm:ss" and end_time == "hh:mm:ss":
         pass
@@ -60,8 +59,10 @@ def scrap():
     #     select state from log_table where time_stamp >= start_time and time_stamp <= end_time
 
     history = dict(
-        order_book=np.sort(np.random.random_sample(21) * 100).tolist(),
-        statistics=dict(ma10=100.0, std10=5.0),
+        order_book=_get_orderbook(),
+        statistics=_get_statistics(tick_in_min=3,
+                                   start_time=start_time,
+                                   end_time=end_time)
     )
 
     return jsonify(history=history)
@@ -86,8 +87,8 @@ def step():
     done = _gameover(agent, ticker, decision, trad_qty, trad_price)
 
     next_obs = dict(
-        order_book=np.sort(np.random.random_sample(21) * 100).tolist(),
-        statistics=dict(ma10=100.0, std10=5.0),
+        order_book=_get_orderbook(),
+        statistics=_get_statistics(tick_in_min=3),
     )
     next_obs.update(agent._asdict())
 
@@ -207,3 +208,41 @@ def _add_agent(agent_id):
     db.session.commit()
 
     return agent_data
+
+
+def _get_orderbook():
+    sql = """
+    select ask_price, bid_price, ask_size, bid_size
+    from proxy_order_book
+    order by timestamp desc
+    limit 1
+    """
+    result = pd.read_sql(sql, db.engine)
+    return result.to_dict(orient="record")
+
+
+def _get_statistics(tick_in_min, start_time=None, end_time=None):
+    # TODO: use upbit_trade_history model?
+    # TODO: slice data from start_time to end_time
+    sql = """
+    SELECT
+        min(trade_price) low
+        , max(trade_price) high
+        , (array_agg(trade_price ORDER BY trade_timestamp ASC))[1] open
+        , ((array_agg(trade_price ORDER BY trade_timestamp DESC))[1]) as close
+        , sum(trade_volume) volume
+    FROM upbit_trade_history
+    GROUP BY to_timestamp(floor((extract('epoch' from trade_timestamp) / {tick} )) * {tick})
+    AT TIME ZONE 'UTC'
+    """.format(tick=tick_in_min * 60)
+
+    result = pd.read_sql(sql, db.engine).astype(float)
+    ohlc = dict(open=result.open,
+                close=result.close,
+                low=result.low,
+                high=result.high,
+                volume=result.volume)
+    # TODO: maybe handle nan differently
+    output = dict(ma=np.nan_to_num(abstract.MA(ohlc)).tolist(),
+                  sma=np.nan_to_num(abstract.SMA(ohlc, timeperiod=25)).tolist())
+    return output

@@ -26,6 +26,26 @@ class Agents(db.Model):
                 "sharp": self.portfolio_rets_sharp})
 
 
+class ProxyOrderBook(db.Model):
+    """ Realtime orderbook
+    ask/bid size is replaced to 999999999999
+    maintain only limited size of data
+    """
+    timestamp = db.Column(db.DateTime, primary_key=True)
+    ask_price = db.Column(db.Float)
+    bid_price = db.Column(db.Float)
+    ask_size = db.Column(db.BigInteger, default=999999999999)
+    bid_size = db.Column(db.BigInteger, default=999999999999)
+
+    def __init__(self, obj):
+        self.timestamp = datetime.fromtimestamp(
+            obj["timestamp"] / 1000)
+        self.ask_price = obj["askPrice"]
+        self.bid_price = obj["bidPrice"]
+        self.ask_size = obj["askSize"]
+        self.bid_size = obj["bidSize"]
+
+
 class UpbitTradeHistory(db.Model):
     """ Price history 업비트의 체결 히스토리
     This records are used to generate indicators in the following:

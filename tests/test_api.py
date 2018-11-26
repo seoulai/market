@@ -49,9 +49,9 @@ class Test_env():
         )
         # Delete test_agent
         Agents.query.filter_by(name=data["agent_id"]).delete()
-        rv = client.post("/api/reset",
-                         content_type="application/json",
-                         data=json.dumps(data))
+        rv = client.get("/api/reset",
+                        content_type="application/json",
+                        data=json.dumps(data))
         assert rv.status_code == 200
         assert all([a == b for a, b in zip(json_of_response(rv).keys(),
                                            ["state"])])
