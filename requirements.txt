@@ -9,6 +9,7 @@ SQLAlchemy==1.2.12
 flake8==3.6.0
 flake8-quotes==1.0.0
 numpy==1.15.3
+pandas==0.23.4
 TA-Lib==1.15.3
 Flask_SocketIO==3.0.0
 psycopg2-binary==2.7.6.1

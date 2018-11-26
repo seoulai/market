@@ -25,6 +25,7 @@ setup(
         "PyMySQL",
         "SQLAlchemy",
         "numpy",
+        "pandas",
         "flake8",
         "flake8-quotes",
         "TA-Lib",
