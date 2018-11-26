@@ -7,7 +7,7 @@ import pytest
 import logging
 import json
 # from pathlib import Path
-from market import app, db
+from market import app  # , db
 from market.model import Agents
 
 logging.basicConfig(level=logging.DEBUG)
@@ -20,8 +20,8 @@ xfail = pytest.mark.xfail
 def client(request):
     """Create and configure a new app instance for each test."""
     # TODO: use seperate db
-    db.drop_all()
-    db.create_all()
+    # db.drop_all()
+    # db.create_all()
     # app.config.from_pyfile(Path(__file__).parent / "test.cfg")
     log.debug("setup: create test client")
     return app.test_client()
@@ -42,7 +42,7 @@ def check_response_format(response):
 class Test_env():
     """Data test suite
     """
-
+    @pytest.mark.skip(reason="")
     def test_register(self, client):
         data = dict(
             agent_id="test_agent",
@@ -56,6 +56,7 @@ class Test_env():
         assert all([a == b for a, b in zip(json_of_response(rv).keys(),
                                            ["state"])])
 
+    @pytest.mark.skip(reason="")
     def test_step(self, client):
         data = dict(agent_id="test_agent",
                     decision="buy",
