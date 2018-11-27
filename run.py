@@ -29,10 +29,13 @@ class UIThread(Thread):
         # infinite loop
         while not ui_thread_stop_event.isSet():
             data = dict(
-                rank=[x._asdict() for x in Agents.query.all()],
+                rank=[x._asrank()
+                      for x in Agents.query.order_by(
+                          Agents.portfolio_rets_val.desc()
+                ).all()],
                 orderbook=ProxyOrderBook.query.order_by(
                     ProxyOrderBook.timestamp.desc()).first()._asdict(),
-                prices=[x._asdict() for x in UpbitTradeHistory.query.order_by(
+                prices=[x._aslist() for x in UpbitTradeHistory.query.order_by(
                     UpbitTradeHistory.trade_timestamp.desc()).limit(10).all()]
             )
             socketio.emit("leaderboard",

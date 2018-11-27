@@ -25,6 +25,10 @@ class Agents(db.Model):
                 "mdd": self.portfolio_rets_mdd,
                 "sharp": self.portfolio_rets_sharp})
 
+    def _asrank(self):
+        return dict(name=self.name,
+                    profit=((self.portfolio_rets_val / 100000000) - 1) * 100)
+
 
 class ProxyOrderBook(db.Model):
     """ Realtime orderbook
@@ -73,10 +77,9 @@ class UpbitTradeHistory(db.Model):
         self.trade_price = obj["tradePrice"]
         self.trade_volume = obj["tradeVolume"]
 
-    def _asdict(self):
-        return dict(trade_timestamp=self.trade_timestamp.timestamp(),
-                    trade_price=self.trade_price,
-                    trade_volume=self.trade_volume)
+    def _aslist(self):
+        return [self.trade_timestamp.timestamp(),
+                self.trade_price]
 
 
 class TradeHistory(db.Model):
