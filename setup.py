@@ -30,7 +30,8 @@ setup(
         "flake8-quotes",
         "TA-Lib",
         "websocket-client",
-        "psycopg2-binary"
+        "psycopg2-binary",
+        "Flask_SocketIO"
     ],
     extras_require={
         "test": [

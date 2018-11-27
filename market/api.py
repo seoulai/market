@@ -17,8 +17,6 @@ api_route = Blueprint(
     url_prefix="/api"
 )
 
-max_qty = 10_000_000
-
 
 @api_route.route("/select", methods=["GET"])
 def select():
@@ -41,7 +39,7 @@ def reset():
             statistics=_get_statistics(tick_in_min=3)
         )
 
-        obs.update(agent_data)
+        obs.update(agent_data._asdict())
         return jsonify(obs=obs)
     else:
         return make_response(jsonify({"msg": "agent is not registered"}), 400)
@@ -113,6 +111,7 @@ def _conclude(
         decision,
         trad_price,
         trad_qty):
+
     reward = 0
     done = False
     info = {}
@@ -152,7 +151,7 @@ def _conclude(
     # FIXME: read price from database
     # current price
     # 현재가
-    cur_price = np.random.randint(100)
+    cur_price = _get_orderbook()['ask_price']
     # current asset value is asset_qty x current price
     # 현재 자산 가치 = 자산 수량 x 현재가
     agent.portfolio_rets_val = agent.asset_qtys * cur_price
@@ -168,16 +167,12 @@ def _conclude(
         done = True
         msg = "you bankrupt"
 
-    # FIXME: read price from database
     # we just observe state_size time series data.
     next_obs = dict(
-        order_book=np.sort(np.random.random_sample(21) * 100).tolist(),
-        agent_info=dict(cash=agent.cash,
-                        asset_qtys=dict(ticker="KRW-BTC",
-                                        asset_qty=max_qty)),
-        statistics=dict(ma10=100.0, std10=5.0),
-        portfolio_ret=dict(value=10_000_000, mdd=0.0, sharp=0.0),
+        order_book=_get_orderbook(),
+        statistics=_get_statistics(tick_in_min=3)
     )
+    next_obs.update(agent._asdict())
 
     info["priv_pflo_value"] = priv_pflo_value
     info["cur_pflo_value"] = cur_pflo_value
@@ -187,6 +182,7 @@ def _conclude(
     info["portfolio_value"] = cur_pflo_value
     info["msg"] = msg
 
+    db.session.commit()  # update agent's asset, portfolio
     return next_obs, reward, done, info
 
 
@@ -196,18 +192,13 @@ def _get_agent(agent_id):
 
 
 def _add_agent(agent_id):
-    ret = Agents.query.filter_by(name=agent_id).scalar()
-    agent_data = dict(
-        agent_info={"cash": 100_000_000, "asset_qtys": {"KRW-BTC": 0.0}},
-        portfolio_rets={"val": 100_000_000, "mdd": 0.0, "sharp": 0.0})
-    # print(ret)
-    if ret is not None:
+    agent_data = Agents.query.filter_by(name=agent_id).first()
+    if agent_data is not None:
         return agent_data
-
-    db.session.add(Agents(name=agent_id))
+    new_agent = Agents(name=agent_id)
+    db.session.add(new_agent)
     db.session.commit()
-
-    return agent_data
+    return new_agent
 
 
 def _get_orderbook():
@@ -218,7 +209,7 @@ def _get_orderbook():
     limit 1
     """
     result = pd.read_sql(sql, db.engine)
-    return result.to_dict(orient="record")
+    return result.to_dict(orient="record")[0]
 
 
 def _get_statistics(tick_in_min, start_time=None, end_time=None):

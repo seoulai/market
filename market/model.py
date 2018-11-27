@@ -45,6 +45,12 @@ class ProxyOrderBook(db.Model):
         self.ask_size = obj["askSize"]
         self.bid_size = obj["bidSize"]
 
+    def _asdict(self):
+        return dict(ask_price=self.ask_price,
+                    bid_price=self.bid_price,
+                    ask_size=self.ask_size,
+                    bid_size=self.bid_size)
+
 
 class UpbitTradeHistory(db.Model):
     """ Price history 업비트의 체결 히스토리
@@ -66,6 +72,11 @@ class UpbitTradeHistory(db.Model):
             obj["tradeTimestamp"] / 1000)
         self.trade_price = obj["tradePrice"]
         self.trade_volume = obj["tradeVolume"]
+
+    def _asdict(self):
+        return dict(trade_timestamp=self.trade_timestamp.timestamp(),
+                    trade_price=self.trade_price,
+                    trade_volume=self.trade_volume)
 
 
 class TradeHistory(db.Model):
