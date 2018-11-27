@@ -1,8 +1,7 @@
-from flask import render_template, jsonify
-from flask_socketio import SocketIO, emit
+from flask import render_template
+from flask_socketio import SocketIO
 from threading import Thread, Event
 import json
-from random import random
 from time import sleep
 from market import app
 from market.model import Agents, ProxyOrderBook, UpbitTradeHistory
@@ -36,9 +35,9 @@ class UIThread(Thread):
                 prices=[x._asdict() for x in UpbitTradeHistory.query.order_by(
                     UpbitTradeHistory.trade_timestamp.desc()).limit(10).all()]
             )
-            socketio.emit('leaderboard',
-                          {'data': json.dumps(data)},
-                          namespace='/market')
+            socketio.emit("leaderboard",
+                          {"data": json.dumps(data)},
+                          namespace="/market")
             sleep(self.delay)
 
     def run(self):
@@ -57,7 +56,7 @@ def index():
     return render_template("index.html")
 
 
-@socketio.on('connect', namespace='/market')
+@socketio.on("connect", namespace="/market")
 def test_connect():
     # need visibility of the global thread object
     global ui_thread
@@ -67,10 +66,10 @@ def test_connect():
         ui_thread.start()
 
 
-@socketio.on('disconnect', namespace='/market')
+@socketio.on("disconnect", namespace="/market")
 def test_disconnect():
-    print('Client disconnected')
+    print("Client disconnected")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0")

@@ -151,7 +151,7 @@ def _conclude(
     # FIXME: read price from database
     # current price
     # 현재가
-    cur_price = _get_orderbook()['ask_price']
+    cur_price = _get_orderbook()["ask_price"]
     # current asset value is asset_qty x current price
     # 현재 자산 가치 = 자산 수량 x 현재가
     agent.portfolio_rets_val = agent.asset_qtys * cur_price
