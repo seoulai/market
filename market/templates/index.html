@@ -4,9 +4,11 @@
     <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script src="static/js/ws.js"></script>
+    
 
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" herf="http://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.css">
+    
 </head>
 <body>
 <div class="container">
@@ -16,10 +18,9 @@
 </div>
     
 </div>
-
 <div class="container" id="content">
     <div class="row">
-        <div class="col-6 col-md-4">
+        <div class="col-4 col-md-4">
             <table class="table">
                 <thead>
                     <tr>
@@ -29,33 +30,35 @@
                     </tr>
                 </thead>
                 <tbody id="rank">
-                   
                 </tbody>
             </table>
         </div>
-        <div class="col-6 col-md-4">
-            <table class="table">
-                <thead>
-                    <tr>
-                    <th colspan="2" scope="col">OrderBook</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                    <td id="ask">askPrice</td>
-                    <td></td>
-                    </tr>
-                    <tr>
-                    <td id="bid">bidPrice</td>
-                    <td></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="col-6 col-md-4">
+        <div class="col-8 col-md-8">
+            <div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                        <th colspan="2" scope="col">OrderBook</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="ask_change">ask</td>
+                            <td id="ask">0</td>
+                        </tr>
+                        <tr>
+                            <td id="bid_change">bid</td>
+                            <td id="bid">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             <div id="chart_div"></div>
         </div>
+        <span class="oi oi-icon-name" title="icon name" aria-hidden="true"></span>
     </div>
 </div>
 </body>
+
+<script src="static/js/ws.js"></script>
 </html>

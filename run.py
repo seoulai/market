@@ -4,7 +4,8 @@ from threading import Thread, Event
 import json
 from time import sleep
 from market import app
-from market.model import Agents, ProxyOrderBook, UpbitTradeHistory
+from market.api import _get_prices
+from market.model import Agents, ProxyOrderBook
 from market.orderbook import OrderbookThread
 
 # upbit data pulling Thread
@@ -35,8 +36,7 @@ class UIThread(Thread):
                 ).all()],
                 orderbook=ProxyOrderBook.query.order_by(
                     ProxyOrderBook.timestamp.desc()).first()._asdict(),
-                prices=[x._aslist() for x in UpbitTradeHistory.query.order_by(
-                    UpbitTradeHistory.trade_timestamp.desc()).limit(10).all()]
+                prices=_get_prices()
             )
             socketio.emit("leaderboard",
                           {"data": json.dumps(data)},

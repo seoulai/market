@@ -212,7 +212,27 @@ def _get_orderbook():
     return result.to_dict(orient="record")[0]
 
 
-def _get_statistics(tick_in_min, start_time=None, end_time=None):
+def _get_prices():
+    # TODO: use upbit_trade_history model?
+    sql = """
+    select ts, open
+    from (
+        SELECT
+            COALESCE(to_char(min(trade_timestamp), 'YYYY-MM-DD HH24:MI:SS'), '') as ts
+            , (array_agg(trade_price ORDER BY trade_timestamp ASC))[1] as open
+        FROM upbit_trade_history
+        GROUP BY to_timestamp(floor((extract('epoch' from trade_timestamp) / 10 )) * 10)
+        AT TIME ZONE 'UTC'
+    ) t
+    order by t.ts desc
+    limit 100
+    """
+
+    result = pd.read_sql(sql, db.engine)
+    return result.to_dict("split")["data"]
+
+
+def _get_ohlc(tick_in_min, start_time=None, end_time=None):
     # TODO: use upbit_trade_history model?
     # TODO: slice data from start_time to end_time
     sql = """
@@ -233,6 +253,11 @@ def _get_statistics(tick_in_min, start_time=None, end_time=None):
                 low=result.low,
                 high=result.high,
                 volume=result.volume)
+    return ohlc
+
+
+def _get_statistics(tick_in_min, start_time=None, end_time=None):
+    ohlc = _get_ohlc(tick_in_min, start_time, end_time)
     # TODO: maybe handle nan differently
     output = dict(ma=np.nan_to_num(abstract.MA(ohlc)).tolist(),
                   sma=np.nan_to_num(abstract.SMA(ohlc, timeperiod=25)).tolist())
