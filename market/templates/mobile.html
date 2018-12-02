@@ -23,78 +23,70 @@
     <link href="static/css/mobile.css" rel="stylesheet" />
   </head>
 
-  <body>
-    <div class="container-fluid">
-      <div class="d-flex justify-content-sm-center">
-        <img
-          class="mb-4"
-          src="static/seoulai_logo.png"
-          alt=""
-          width="72"
-          height="72"
-        />
-      </div>
-      <div class="form-signin">
-        <label for="agent_id">Agent name</label>
+  <body class="text-center">
+    <div class="form-trade">
+      <img
+        class="mb-4"
+        src="static/seoulai_logo.png"
+        alt=""
+        width="50"
+        height="50"
+      />
+      <table class="table">
+        <thead>
+          <tr>
+            <th colspan="2" scope="col">OrderBook</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td id="sell_change">BUY</td>
+            <td id="sell">0</td>
+          </tr>
+          <tr>
+            <td id="buy_change">SELL</td>
+            <td id="buy">0</td>
+          </tr>
+        </tbody>
+      </table>
+      <table class="table">
+        <thead>
+          <tr>
+            <th colspan="4" scope="col">My Asset</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Total portfolio</td>
+            <td id="total_portfolio">0</td>
+            <td>Total quantity</td>
+            <td id="total_quantity">0</td>
+          </tr>
+          <tr>
+            <td>Cash</td>
+            <td id="cash">0</td>
+            <td>Score(%)</td>
+            <td id="score">0</td>
+          </tr>
+        </tbody>
+      </table>
+      <div>
+        <label for="agent_id" class="sr-only">Agent ID</label>
         <input
           type="text"
           class="form-control"
           id="agent_id"
-          placeholder="Enter your agent name"
+          placeholder="Enter your agent id"
         />
-        <table class="table">
-          <thead>
-            <tr>
-              <th colspan="2" scope="col">OrderBook</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td id="sell_change">BUY</td>
-              <td id="sell">0</td>
-            </tr>
-            <tr>
-              <td id="buy_change">SELL</td>
-              <td id="buy">0</td>
-            </tr>
-          </tbody>
-        </table>
-        <table class="table">
-          <thead>
-            <tr>
-              <th colspan="2" scope="col">My Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>cash</td>
-              <td id="cash">0</td>
-            </tr>
-            <tr>
-              <td>total quantity</td>
-              <td id="total_quantity">0</td>
-            </tr>
-            <tr>
-              <td>total portfolio val</td>
-              <td id="portfolio_val">0</td>
-            </tr>
-            <tr>
-              <td>score</td>
-              <td id="score">0</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div>
-        <div class="form-group">
-          <label for="quantity"></label>
-          <input
-            type="text"
-            class="form-control m-2"
-            id="quantity"
-            placeholder="quantity"
-          />
-        </div>
+        <label for="quantity" class="sr-only">Quantity</label>
+        <input
+          type="number"
+          class="form-control"
+          id="quantity"
+          placeholder="0.0"
+          min="0"
+          step="0.01"
+        />
         <div class="btn-group" role="group">
           <button class="btn btn-lg btn-danger" id="sell_decision">SELL</button>
           <button class="btn btn-lg btn-primary" id="buy_decision">BUY</button>

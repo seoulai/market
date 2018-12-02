@@ -7,7 +7,14 @@ $(document).ready(function() {
   //receive details from server
   socket.on("leaderboard", function(msg) {
     data = JSON.parse(msg.data)
-
+    for (var i = 0; i < data.rank.length; i++) {
+      if ($("#agent_id").val() === data.rank[i].name) {
+        $("#cash").text(data.rank[i].cash.toLocaleString())
+        $("#total_quantity").text(data.rank[i].asset_qtys.toLocaleString())
+        $("#total_portfolio").text(data.rank[i].portfolio_val.toLocaleString())
+        $("#score").text(data.rank[i].profit)
+      }
+    }
     var sell_price = data.orderbook.sell_price
     var old_sell_price = parseInt(
       $("#sell")
@@ -38,11 +45,12 @@ $(document).ready(function() {
   })
 
   trade = function(decision, price) {
+    var q = parseFloat($("#quantity").val())
     var data = {
       agent_id: $("#agent_id").val(),
       decision: decision,
       price: price,
-      quantity: parseFloat($("#quantity").val())
+      quantity: q < 0 ? 0 : q
     }
     console.log(data)
 
@@ -51,9 +59,9 @@ $(document).ready(function() {
       url: "/api/m/trade",
       data: data,
       success: function(responseData) {
-        for (var key in responseData) {
-          if (key == "profit") $("#score").text(responseData[key])
-        }
+        // for (var key in responseData) {
+        //   if (key == "profit") $("#score").text(responseData[key])
+        // }
       }
     })
   }
