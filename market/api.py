@@ -6,9 +6,10 @@ seoulai.com
 from flask import Blueprint, request, jsonify, make_response
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from talib import abstract
 from market.base import fee_rt, Constants
-from market.model import Agents
+from market.model import Agents, TradeHistory
 from market import db
 
 api_route = Blueprint(
@@ -32,8 +33,8 @@ def trade():
         agent = _add_agent(agent_id)
 
     _conclude(agent, "KRW-BTC", int(decision), float(quantity), int(price))
-    agent = _get_agent(agent_id)
-    return jsonify(agent._asrank())
+    # agent = _get_agent(agent_id)
+    return jsonify()
 
 
 @api_route.route("/select", methods=["GET"])
@@ -55,7 +56,7 @@ def reset():
         obs = dict(
             order_book=_get_orderbook(),
             **_get_recent_price_vol(),
-            statistics=_get_statistics(tick_in_min=3)
+            statistics=_get_statistics(n=1)
         )
 
         obs.update(agent_data._asdict())
@@ -78,7 +79,7 @@ def scrap():
     history = dict(
         order_book=_get_orderbook(),
         **_get_recent_price_vol(),
-        statistics=_get_statistics(tick_in_min=3,
+        statistics=_get_statistics(n=30,
                                    start_time=start_time,
                                    end_time=end_time)
     )
@@ -99,27 +100,17 @@ def step():
     if agent is None:
         return make_response(jsonify({"msg": "agent is not exist"}), 400)
 
+    if trad_qty < 0:
+        return make_response(jsonify({"msg": "wrong quantity (less than zero)"}), 400)
+
     next_obs, rewards, done, info = _conclude(
         agent, ticker, decision, trad_qty, trad_price)
-
-    done = _gameover(agent, ticker, decision, trad_qty, trad_price)
-
-    next_obs = dict(
-        order_book=_get_orderbook(),
-        **_get_recent_price_vol(),
-        statistics=_get_statistics(tick_in_min=3),
-    )
-    next_obs.update(agent._asdict())
 
     return jsonify(next_obs=next_obs,
                    rewards=rewards,
                    done=done,
                    info=info
                    )
-
-
-def _gameover(agent_id, ticker, decision, trad_qty, trad_price):
-    return False
 
 
 def _conclude(
@@ -140,7 +131,8 @@ def _conclude(
 
     next_obs = dict(
         order_book=_get_orderbook(),
-        statistics=_get_statistics(tick_in_min=3)
+        **_get_recent_price_vol(),
+        statistics=_get_statistics(n=1)
     )
     cash = agent.cash
     asset_qty = agent.asset_qtys
@@ -161,12 +153,10 @@ def _conclude(
         # after selling, cash will increase.
         cash = round((cash + trading_amt - fee), BASE)
         # quantity of asset will decrease.
-        print(asset_qty, ccld_qty, asset_qty < ccld_qty)
         if asset_qty < ccld_qty:
             next_obs.update(agent._asdict())
             return next_obs, rewards, done, info
         asset_qty = round((asset_qty - ccld_qty), BASE)
-        print(asset_qty)
 
     cur_price = _get_recent_price_vol()["cur_price"]
     asset_val = asset_qty * cur_price
@@ -176,6 +166,10 @@ def _conclude(
     agent.cash = cash
     agent.asset_qtys = asset_qty
     agent.portfolio_rets_val = next_portfolio_val
+    if (asset_qty == 0.):
+        agent.asset_qtys_zero_updated = datetime.utcnow()
+    transaction = TradeHistory(agent.id, decision, ccld_price, ccld_qty)
+    db.session.add(transaction)
     db.session.commit()  # update agent's asset, portfolio
 
     return_amt = round((next_portfolio_val - portfolio_val), BASE)
@@ -211,6 +205,27 @@ def _add_agent(agent_id):
     db.session.add(new_agent)
     db.session.commit()
     return new_agent
+
+
+def _get_avg_buy(agent_name):
+    sql = """
+    select sum(trade_price*trade_qty)/sum(trade_qty) as avg_buy
+    from (
+        select agent_id
+            , trade_price
+            , CASE
+                WHEN trace_decision = 'buy'  THEN trade_qty
+                ELSE trade_qty * (-1)
+            END as trade_qty
+            , ts
+    ) trade_history
+    where agent_id=(select agent_id from agents where name='{name}')
+      and trade_decision='buy'
+      and ts > (select asset_qtys_zero_updated from agents where name='{name}')
+    group by agent_id
+    """.format(name=agent_name)
+    result = pd.read_sql(sql, db.engine)
+    return result.to_dict(orient="record")[0]
 
 
 def _get_orderbook():
@@ -280,19 +295,20 @@ def _get_ohlc(tick_in_min, start_time=None, end_time=None):
     return ohlc
 
 
-def _get_statistics(tick_in_min, start_time=None, end_time=None):
-    ohlc = _get_ohlc(tick_in_min, start_time, end_time)
+def _get_statistics(n=1, start_time=None, end_time=None):
+    ohlc = _get_ohlc(3, start_time, end_time)
     # TODO: maybe handle nan differently
+    limit = n * -1
     stoch = np.nan_to_num(abstract.STOCH(ohlc))
     macd = np.nan_to_num(abstract.MACD(ohlc))
     output = dict(
-        macd_first=macd[0][-1],
-        macd_second=macd[1][-1],
-        macd_third=macd[2][-1],
-        stoch_first=stoch[0][-1],
-        stoch_second=stoch[1][-1],
-        ma=np.nan_to_num(abstract.MA(ohlc)[-1]).tolist(),
-        sma=np.nan_to_num(abstract.SMA(ohlc)[-1]).tolist(),
-        rsi=np.nan_to_num(abstract.RSI(ohlc)[-1]).tolist(),
-        std=np.nan_to_num(abstract.MA(ohlc)[-1]).tolist())
+        macd_first=macd[0][limit],
+        macd_second=macd[1][limit],
+        macd_third=macd[2][limit],
+        stoch_first=stoch[0][limit],
+        stoch_second=stoch[1][limit],
+        ma=np.nan_to_num(abstract.MA(ohlc)[limit]).tolist(),
+        sma=np.nan_to_num(abstract.SMA(ohlc)[limit]).tolist(),
+        rsi=np.nan_to_num(abstract.RSI(ohlc)[limit]).tolist(),
+        std=np.nan_to_num(abstract.MA(ohlc)[limit]).tolist())
     return output

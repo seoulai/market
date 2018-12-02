@@ -12,6 +12,7 @@ class Agents(db.Model):
     portfolio_rets_val = db.Column(db.Float, default=100000000)
     portfolio_rets_mdd = db.Column(db.Float, default=0.0)
     portfolio_rets_sharp = db.Column(db.Float, default=0.0)
+    asset_qtys_zero_updated = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return "<Agent %r>" % self.name
@@ -30,6 +31,9 @@ class Agents(db.Model):
 
         profit_ratio = ((self.portfolio_rets_val / 100_000_000) - 1) * 100.0
         return dict(name=self.name,
+                    cash=self.cash,
+                    asset_qtys=self.asset_qtys,
+                    portfolio_val=self.portfolio_rets_val,
                     profit=round(profit_ratio, Constants.BASE))
 
 
@@ -89,9 +93,16 @@ class TradeHistory(db.Model):
     """ Seoul AI Market 체결 히스토리
         Conclude history
     """
-    ts = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    ts = db.Column(db.DateTime, default=datetime.utcnow)
     agent_id = db.Column(db.Integer)
     trade_decision = db.Column(db.String)
     trade_price = db.Column(db.Float)
     trade_qty = db.Column(db.Float)
-    coin_name = db.Column(db.String, default="KRW-BTC")
+
+    def __init__(self, agent_id, decision, price, qty):
+        # self.ts = obj["tradeDate"]
+        self.agent_id = agent_id
+        self.trade_decision = Constants.DECISION[decision]
+        self.trade_price = price
+        self.trade_qty = qty
