@@ -22,19 +22,33 @@ $(document).ready(function() {
     }
     drawBasic(data.prices)
     $("#rank").html(rank_string)
-    var ask_price = data.orderbook.ask_price.toLocaleString()
-    var old_ask_price = parseInt($("#ask").text())
-    ask_price > old_ask_price
-      ? $("#ask_change").html("<font color='red'>ASK</font>")
-      : $("#ask_change").html("<font color='blue'>ASK</font>")
-    $("#ask").text(ask_price)
+    var sell_price = data.orderbook.sell_price
+    var old_sell_price = parseInt(
+      $("#sell")
+        .text()
+        .replace(/,/g, "")
+    )
+    if (sell_price > old_sell_price)
+      $("#sell_change").html("<font color='red'>SELL</font>")
+    if (sell_price < old_sell_price)
+      $("#sell_change").html("<font color='blue'>SELL</font>")
+    if (sell_price == old_sell_price)
+      $("#sell_change").html("<font color='black'>SELL</font>")
+    $("#sell").text(sell_price.toLocaleString())
 
-    var bid_price = data.orderbook.bid_price.toLocaleString()
-    var old_bid_price = parseInt($("#bid").text())
-    bid_price > old_bid_price
-      ? $("#bid_change").html("<font color='red'>BID</font>")
-      : $("#bid_change").html("<font color='blue'>BID</font>")
-    $("#bid").text(bid_price)
+    var buy_price = data.orderbook.buy_price
+    var old_buy_price = parseInt(
+      $("#buy")
+        .text()
+        .replace(/,/g, "")
+    )
+    if (buy_price > old_buy_price)
+      $("#buy_change").html("<font color='red'>BUY</font>")
+    if (buy_price < old_buy_price)
+      $("#buy_change").html("<font color='blue'>BUY</font>")
+    if (buy_price == old_buy_price)
+      $("#buy_change").html("<font color='black'>BUY</font>")
+    $("#buy").text(buy_price.toLocaleString())
   })
 
   google.charts.load("current", { packages: ["corechart", "line"] })

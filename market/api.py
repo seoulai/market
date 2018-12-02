@@ -18,6 +18,24 @@ api_route = Blueprint(
 )
 
 
+@api_route.route("/m/trade", methods=["GET"])
+def trade():
+    agent_id = request.args.get("agent_id")
+    quantity = request.args.get("quantity", 0)
+    decision = request.args.get("decision", Constants.HOLD)
+    price = request.args.get("price", 0)
+    if agent_id is None:
+        return make_response(jsonify({"msg": "no agent_id provided"}), 400)
+
+    agent = _get_agent(agent_id)
+    if agent is None:
+        agent = _add_agent(agent_id)
+
+    _conclude(agent, "KRW-BTC", int(decision), float(quantity), int(price))
+    agent = _get_agent(agent_id)
+    return jsonify(agent._asrank())
+
+
 @api_route.route("/select", methods=["GET"])
 def select():
     exchange = request.args.get("exchange")
@@ -36,6 +54,7 @@ def reset():
     if agent_data:
         obs = dict(
             order_book=_get_orderbook(),
+            **_get_recent_price_vol(),
             statistics=_get_statistics(tick_in_min=3)
         )
 
@@ -58,6 +77,7 @@ def scrap():
 
     history = dict(
         order_book=_get_orderbook(),
+        **_get_recent_price_vol(),
         statistics=_get_statistics(tick_in_min=3,
                                    start_time=start_time,
                                    end_time=end_time)
@@ -79,19 +99,20 @@ def step():
     if agent is None:
         return make_response(jsonify({"msg": "agent is not exist"}), 400)
 
-    next_obs, reward, done, info = _conclude(
+    next_obs, rewards, done, info = _conclude(
         agent, ticker, decision, trad_qty, trad_price)
-    reward = _simulate(agent, ticker, decision, trad_qty, trad_price)
+
     done = _gameover(agent, ticker, decision, trad_qty, trad_price)
 
     next_obs = dict(
         order_book=_get_orderbook(),
+        **_get_recent_price_vol(),
         statistics=_get_statistics(tick_in_min=3),
     )
     next_obs.update(agent._asdict())
 
     return jsonify(next_obs=next_obs,
-                   reward=reward,
+                   rewards=rewards,
                    done=done,
                    info=info
                    )
@@ -101,89 +122,80 @@ def _gameover(agent_id, ticker, decision, trad_qty, trad_price):
     return False
 
 
-def _simulate(agent_id, ticker, decision, trad_qty, trad_price):
-    return 1.0
-
-
 def _conclude(
         agent,
         ticker,
         decision,
-        trad_price,
-        trad_qty):
+        trad_qty,
+        trad_price):
 
-    reward = 0
+    rewards = {}
     done = False
     info = {}
-    msg = ""
+    BASE = Constants.BASE
+    FEE_BASE = Constants.FEE_BASE
 
-    # concluded price.
-    # 체결가격
     ccld_price = trad_price
-    # concluded quantity.
-    # 체결수량
     ccld_qty = trad_qty
 
-    # total amount of moved money.
-    # 거래금액
-    trading_amt = ccld_price * ccld_qty
-    fee = trading_amt * fee_rt
-
-    # previus potfolio value(previous cash+asset_value)
-    # 이전 포트폴리오 가치(이전 현금 + 이전 자산 가치)
-    priv_pflo_value = agent.cash + agent.portfolio_rets_val
-
-    if decision == Constants.BUY:
-        # after buying, cash will decrease.
-        # 매수 후, 현금은 줄어든다.
-        agent.cash = agent.cash - trading_amt - fee
-        # quantity of asset will increase.
-        # 매수 후, 자산 수량은 늘어난다.
-        agent.asset_qtys = agent.asset_qtys + ccld_qty
-    elif decision == Constants.SELL:
-        # after selling, cash will increase.
-        # 매도 후, 현금은 증가한다.
-        agent.cash = agent.cash + (trading_amt - fee)
-        # quantity of asset will decrease.
-        # 매도 후, 자산 수량은 줄어든다.
-        agent.asset_qtys = agent.asset_qtys - ccld_qty
-
-    # FIXME: read price from database
-    # current price
-    # 현재가
-    cur_price = _get_orderbook()["ask_price"]
-    # current asset value is asset_qty x current price
-    # 현재 자산 가치 = 자산 수량 x 현재가
-    agent.portfolio_rets_val = agent.asset_qtys * cur_price
-    # current potfolio value(current cash+asset_value)
-    # 현재 포트폴리오 가치(현재 현금, 현재 자산 가치)
-    cur_pflo_value = agent.cash + agent.portfolio_rets_val
-
-    # money that you earn or lose in 1 t.
-    # (1 t 동안의 decision으로 변화한 포트폴리오 가치를 reward로 잡음)
-    reward = cur_pflo_value - priv_pflo_value
-
-    if cur_pflo_value < 0:
-        done = True
-        msg = "you bankrupt"
-
-    # we just observe state_size time series data.
     next_obs = dict(
         order_book=_get_orderbook(),
         statistics=_get_statistics(tick_in_min=3)
     )
+    cash = agent.cash
+    asset_qty = agent.asset_qtys
+    portfolio_val = agent.portfolio_rets_val
+    trading_amt = ccld_price * ccld_qty
+    fee = round(ccld_price * ccld_qty * fee_rt, FEE_BASE)
+
+    if decision == Constants.BUY:
+        # after buying, cash will decrease.
+        cash = round((cash - trading_amt - fee), BASE)
+        # quantity of asset will increase.
+        asset_qty = round((asset_qty + ccld_qty), BASE)
+
+        if cash < (trading_amt + fee):
+            next_obs.update(agent._asdict())
+            return next_obs, rewards, done, info
+    elif decision == Constants.SELL:
+        # after selling, cash will increase.
+        cash = round((cash + trading_amt - fee), BASE)
+        # quantity of asset will decrease.
+        print(asset_qty, ccld_qty, asset_qty < ccld_qty)
+        if asset_qty < ccld_qty:
+            next_obs.update(agent._asdict())
+            return next_obs, rewards, done, info
+        asset_qty = round((asset_qty - ccld_qty), BASE)
+        print(asset_qty)
+
+    cur_price = _get_recent_price_vol()["cur_price"]
+    asset_val = asset_qty * cur_price
+    next_portfolio_val = round((cash + asset_val), BASE)
+
+    # update portfolio_val
+    agent.cash = cash
+    agent.asset_qtys = asset_qty
+    agent.portfolio_rets_val = next_portfolio_val
+    db.session.commit()  # update agent's asset, portfolio
+
+    return_amt = round((next_portfolio_val - portfolio_val), BASE)
+    return_per = round(
+        (next_portfolio_val / float(portfolio_val) - 1) * 100.0, BASE)
+    return_sign = np.sign(return_amt)
+    score_amt = round((next_portfolio_val - 100_000_000), BASE)
+    score = round(((next_portfolio_val / 100_000_000) - 1) * 100, BASE)
+
+    rewards = dict(
+        return_amt=return_amt,
+        return_per=return_per,
+        return_sign=return_sign,
+        score_amt=score_amt,
+        score=score)
+
+    # we just observe state_size time series data.
     next_obs.update(agent._asdict())
 
-    info["priv_pflo_value"] = priv_pflo_value
-    info["cur_pflo_value"] = cur_pflo_value
-    info["1t_return"] = cur_pflo_value - priv_pflo_value
-    info["1t_ret_ratio"] = ((cur_pflo_value / priv_pflo_value) - 1) * 100
-    info["fee"] = fee
-    info["portfolio_value"] = cur_pflo_value
-    info["msg"] = msg
-
-    db.session.commit()  # update agent's asset, portfolio
-    return next_obs, reward, done, info
+    return next_obs, rewards, done, info
 
 
 def _get_agent(agent_id):
@@ -210,6 +222,18 @@ def _get_orderbook():
     """
     result = pd.read_sql(sql, db.engine)
     return result.to_dict(orient="record")[0]
+
+
+def _get_recent_price_vol():
+    sql = """
+    select trade_price as cur_price, trade_volume as cur_volume
+    from upbit_trade_history
+    order by trade_timestamp desc
+    limit 1
+    """
+    result = pd.read_sql(sql, db.engine)
+    result.cur_price = result.cur_price.astype(float)  # .astype(int)
+    return result.to_dict("record")[0]
 
 
 def _get_prices():
@@ -259,6 +283,16 @@ def _get_ohlc(tick_in_min, start_time=None, end_time=None):
 def _get_statistics(tick_in_min, start_time=None, end_time=None):
     ohlc = _get_ohlc(tick_in_min, start_time, end_time)
     # TODO: maybe handle nan differently
-    output = dict(ma=np.nan_to_num(abstract.MA(ohlc)).tolist(),
-                  sma=np.nan_to_num(abstract.SMA(ohlc, timeperiod=25)).tolist())
+    stoch = np.nan_to_num(abstract.STOCH(ohlc))
+    macd = np.nan_to_num(abstract.MACD(ohlc))
+    output = dict(
+        macd_first=macd[0][-1],
+        macd_second=macd[1][-1],
+        macd_third=macd[2][-1],
+        stoch_first=stoch[0][-1],
+        stoch_second=stoch[1][-1],
+        ma=np.nan_to_num(abstract.MA(ohlc)[-1]).tolist(),
+        sma=np.nan_to_num(abstract.SMA(ohlc)[-1]).tolist(),
+        rsi=np.nan_to_num(abstract.RSI(ohlc)[-1]).tolist(),
+        std=np.nan_to_num(abstract.MA(ohlc)[-1]).tolist())
     return output

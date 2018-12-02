@@ -1,5 +1,6 @@
 from market import db
 from datetime import datetime
+from market.base import Constants
 
 
 class Agents(db.Model):
@@ -26,8 +27,10 @@ class Agents(db.Model):
                 "sharp": self.portfolio_rets_sharp})
 
     def _asrank(self):
+
+        profit_ratio = ((self.portfolio_rets_val / 100_000_000) - 1) * 100.0
         return dict(name=self.name,
-                    profit=((self.portfolio_rets_val / 100000000) - 1) * 100)
+                    profit=round(profit_ratio, Constants.BASE))
 
 
 class ProxyOrderBook(db.Model):
@@ -50,10 +53,10 @@ class ProxyOrderBook(db.Model):
         self.bid_size = obj["bidSize"]
 
     def _asdict(self):
-        return dict(ask_price=self.ask_price,
-                    bid_price=self.bid_price,
-                    ask_size=self.ask_size,
-                    bid_size=self.bid_size)
+        return dict(sell_price=self.ask_price,
+                    buy_price=self.bid_price,
+                    sell_size=self.ask_size,
+                    buy_size=self.bid_size)
 
 
 class UpbitTradeHistory(db.Model):

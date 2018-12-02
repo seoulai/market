@@ -20,6 +20,10 @@ class Constants(object):
     BUY = 1
     SELL = 2
     DECISION = ["hold", "buy", "sell"]
+    # BASE = 10000
+    # FEE_BASE = 1000
+    BASE = 4
+    FEE_BASE = 3
 
 
 class DotDict(dict):

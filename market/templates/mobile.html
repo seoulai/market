@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script
+      type="text/javascript"
+      src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"
+    ></script>
+    <title>Seoul AI Hackathon for Trading</title>
+
+    <!-- Bootstrap core CSS -->
+    <link
+      rel="stylesheet"
+      href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+
+    <!-- Custom styles for this template -->
+    <link href="static/css/mobile.css" rel="stylesheet" />
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <div class="d-flex justify-content-sm-center">
+        <img
+          class="mb-4"
+          src="static/seoulai_logo.png"
+          alt=""
+          width="72"
+          height="72"
+        />
+      </div>
+      <div class="form-signin">
+        <label for="agent_id">Agent name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="agent_id"
+          placeholder="Enter your agent name"
+        />
+        <table class="table">
+          <thead>
+            <tr>
+              <th colspan="2" scope="col">OrderBook</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td id="sell_change">BUY</td>
+              <td id="sell">0</td>
+            </tr>
+            <tr>
+              <td id="buy_change">SELL</td>
+              <td id="buy">0</td>
+            </tr>
+          </tbody>
+        </table>
+        <table class="table">
+          <thead>
+            <tr>
+              <th colspan="2" scope="col">My Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>cash</td>
+              <td id="cash">0</td>
+            </tr>
+            <tr>
+              <td>total quantity</td>
+              <td id="total_quantity">0</td>
+            </tr>
+            <tr>
+              <td>total portfolio val</td>
+              <td id="portfolio_val">0</td>
+            </tr>
+            <tr>
+              <td>score</td>
+              <td id="score">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="form-group">
+          <label for="quantity"></label>
+          <input
+            type="text"
+            class="form-control m-2"
+            id="quantity"
+            placeholder="quantity"
+          />
+        </div>
+        <div class="btn-group" role="group">
+          <button class="btn btn-lg btn-danger" id="sell_decision">SELL</button>
+          <button class="btn btn-lg btn-primary" id="buy_decision">BUY</button>
+        </div>
+      </div>
+      <hr />
+      <p class="mt-5 mb-3 text-muted">&copy; Seoul AI 2017-2018</p>
+    </div>
+  </body>
+  <script
+    src="static/js/ws.mobile.js?r="
+    +
+    Math.random().toString(36).substring(2,
+    15)
+    +
+    Math.random().toString(36).substring(2,
+    15)
+  ></script>
+</html>

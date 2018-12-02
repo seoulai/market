@@ -59,6 +59,11 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/m")
+def mobile():
+    return render_template("mobile.html")
+
+
 @socketio.on("connect", namespace="/market")
 def test_connect():
     # need visibility of the global thread object
