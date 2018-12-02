@@ -69,21 +69,22 @@ def reset():
 def scrap():
     start_time = request.args.get("start_time")
     end_time = request.args.get("end_time")
+    n = request.args.get("n", 30)
+    n = int(n)
+    if n < 0:
+        return make_response(jsonify({"msg": "n should be positive"}), 400)
 
     if start_time == "hh:mm:ss" and end_time == "hh:mm:ss":
         pass
-    #     select state from redis cache table
-    # else
-    #     select state from log_table where time_stamp >= start_time and time_stamp <= end_time
 
     history = dict(
-        order_book=_get_orderbook(),
-        **_get_recent_price_vol(),
-        statistics=_get_statistics(n=30,
-                                   start_time=start_time,
-                                   end_time=end_time)
+        **_get_orderbook(n=n),
+        **_get_recent_price_vol(n=n),
+        **_get_statistics(n=n,
+                          start_time=start_time,
+                          end_time=end_time)
     )
-
+    pd.DataFrame(history).to_csv("upbit_scrap30.csv", index=False)
     return jsonify(history=history)
 
 
@@ -132,7 +133,7 @@ def _conclude(
     next_obs = dict(
         order_book=_get_orderbook(),
         **_get_recent_price_vol(),
-        statistics=_get_statistics(n=1)
+        statistics=_get_statistics()
     )
     cash = agent.cash
     asset_qty = agent.asset_qtys
@@ -228,30 +229,48 @@ def _get_avg_buy(agent_name):
     return result.to_dict(orient="record")[0]
 
 
-def _get_orderbook():
+def _get_orderbook(n=1):
     sql = """
-    select ask_price, bid_price, ask_size, bid_size
+    select avg(ask_price) as ask_price, avg(bid_price) as bid_price
+        , avg(ask_size) as ask_size, avg(bid_size) as bid_size
     from proxy_order_book
-    order by timestamp desc
-    limit 1
-    """
+    GROUP BY to_timestamp(floor((extract('epoch' from timestamp) / {tick} )) * {tick})
+        AT TIME ZONE 'UTC'
+    order by to_timestamp(floor((extract('epoch' from timestamp) / {tick} )) * {tick})
+        AT TIME ZONE 'UTC' desc
+    limit {limit}
+    """.format(limit=n, tick=3 * 60)
     result = pd.read_sql(sql, db.engine)
-    return result.to_dict(orient="record")[0]
+    if n == 1:
+        return result.to_dict(orient="record")[0]
+    else:
+        return dict(ask_price=result.ask_price.tolist(),
+                    bid_price=result.bid_price.tolist(),
+                    ask_size=result.ask_size.tolist(),
+                    bid_size=result.bid_size.tolist())
 
 
-def _get_recent_price_vol():
+def _get_recent_price_vol(n=1):
     sql = """
-    select trade_price as cur_price, trade_volume as cur_volume
+    select avg(trade_price) as cur_price, avg(trade_volume) as cur_volume
     from upbit_trade_history
-    order by trade_timestamp desc
-    limit 1
-    """
+    GROUP BY to_timestamp(floor((extract('epoch' from trade_timestamp) / {tick} )) * {tick})
+        AT TIME ZONE 'UTC'
+    order by to_timestamp(floor((extract('epoch' from trade_timestamp) / {tick} )) * {tick})
+        AT TIME ZONE 'UTC' desc
+    limit {limit}
+    """.format(limit=n, tick=3 * 60)
     result = pd.read_sql(sql, db.engine)
     result.cur_price = result.cur_price.astype(float)  # .astype(int)
-    return result.to_dict("record")[0]
+    if n == 1:
+        return result.to_dict("record")[0]
+    else:
+        return dict(cur_price=result.cur_price.tolist(),
+                    cur_volume=result.cur_volume.tolist())
 
 
 def _get_prices():
+    # this data for main UI
     # TODO: use upbit_trade_history model?
     sql = """
     select ts, open
@@ -271,7 +290,7 @@ def _get_prices():
     return result.to_dict("split")["data"]
 
 
-def _get_ohlc(tick_in_min, start_time=None, end_time=None):
+def _get_ohlc(tick_in_min=3, start_time=None, end_time=None):
     # TODO: use upbit_trade_history model?
     # TODO: slice data from start_time to end_time
     sql = """
@@ -302,13 +321,13 @@ def _get_statistics(n=1, start_time=None, end_time=None):
     stoch = np.nan_to_num(abstract.STOCH(ohlc))
     macd = np.nan_to_num(abstract.MACD(ohlc))
     output = dict(
-        macd_first=macd[0][limit],
-        macd_second=macd[1][limit],
-        macd_third=macd[2][limit],
-        stoch_first=stoch[0][limit],
-        stoch_second=stoch[1][limit],
-        ma=np.nan_to_num(abstract.MA(ohlc)[limit]).tolist(),
-        sma=np.nan_to_num(abstract.SMA(ohlc)[limit]).tolist(),
-        rsi=np.nan_to_num(abstract.RSI(ohlc)[limit]).tolist(),
-        std=np.nan_to_num(abstract.MA(ohlc)[limit]).tolist())
+        macd_first=macd[0][limit:].tolist(),
+        macd_second=macd[1][limit:].tolist(),
+        macd_third=macd[2][limit:].tolist(),
+        stoch_first=stoch[0][limit:].tolist(),
+        stoch_second=stoch[1][limit:].tolist(),
+        ma=np.nan_to_num(abstract.MA(ohlc)[limit:]).tolist(),
+        sma=np.nan_to_num(abstract.SMA(ohlc)[limit:]).tolist(),
+        rsi=np.nan_to_num(abstract.RSI(ohlc)[limit:]).tolist(),
+        std=np.nan_to_num(abstract.MA(ohlc)[limit:]).tolist())
     return output

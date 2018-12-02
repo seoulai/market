@@ -73,7 +73,7 @@ class UpbitTradeHistory(db.Model):
     trade_date = db.Column(db.String)
     trade_time = db.Column(db.String)
     trade_timestamp = db.Column(db.DateTime)
-    trade_price = db.Column(db.String)
+    trade_price = db.Column(db.Integer)
     trade_volume = db.Column(db.Float)
 
     def __init__(self, obj):
