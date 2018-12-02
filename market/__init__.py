@@ -4,6 +4,7 @@ seoulai.com
 2018
 """
 import os
+import logging
 from flask import Flask
 from flask_compress import Compress
 from flask_sqlalchemy import SQLAlchemy
@@ -12,6 +13,7 @@ from pathlib import Path
 """Create and configure an instance of the Flask application."""
 
 app = Flask(__name__)
+app.logger.setLevel(logging.ERROR)
 
 if Path("market/env.cfg").exists():
     app.config.from_pyfile("env.cfg")
