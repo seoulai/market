@@ -104,7 +104,11 @@ def _update_env_api(branch):
     if not exists(api_project_folder + "/venv"):
         run("cd %s && virtualenv venv -p /usr/bin/python3.6" %
             api_project_folder)
+        run("curl -L http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz --output ta-lib-0.4.0-src.tar.gz")
+        run("tar zxf ta-lib-0.4.0-src.tar.gz")
+        run("cd ta-lib && ./configure --prefix=/usr && make && sudo make install && cd ..")
     with _virtualenv(api_project_folder):
+
         run("pip install -r requirements.txt")
 
 
