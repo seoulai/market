@@ -58,11 +58,7 @@ $(document).ready(function() {
       dataType: "json",
       url: "/api/m/trade",
       data: data,
-      success: function(responseData) {
-        // for (var key in responseData) {
-        //   if (key == "profit") $("#score").text(responseData[key])
-        // }
-      }
+      success: function(responseData) {}
     })
   }
 

@@ -84,7 +84,7 @@ def scrap():
                           start_time=start_time,
                           end_time=end_time)
     )
-    pd.DataFrame(history).to_csv("upbit_scrap30.csv", index=False)
+    # pd.DataFrame(history).to_csv("upbit_scrap3_%s.csv" % n, index=False)
     return jsonify(history=history)
 
 
@@ -321,13 +321,13 @@ def _get_statistics(n=1, start_time=None, end_time=None):
     stoch = np.nan_to_num(abstract.STOCH(ohlc))
     macd = np.nan_to_num(abstract.MACD(ohlc))
     output = dict(
-        macd_first=macd[0][limit:].tolist(),
-        macd_second=macd[1][limit:].tolist(),
-        macd_third=macd[2][limit:].tolist(),
-        stoch_first=stoch[0][limit:].tolist(),
-        stoch_second=stoch[1][limit:].tolist(),
-        ma=np.nan_to_num(abstract.MA(ohlc)[limit:]).tolist(),
+        macd=macd[0][limit:].tolist(),
+        macd_signal=macd[1][limit:].tolist(),
+        macd_hist=macd[2][limit:].tolist(),
+        stoch_slowk=stoch[0][limit:].tolist(),
+        stoch_slowd=stoch[1][limit:].tolist(),
+        vave=np.nan_to_num(abstract.MA(ohlc)[limit:]).tolist(),
         sma=np.nan_to_num(abstract.SMA(ohlc)[limit:]).tolist(),
         rsi=np.nan_to_num(abstract.RSI(ohlc)[limit:]).tolist(),
-        std=np.nan_to_num(abstract.MA(ohlc)[limit:]).tolist())
+        stddev=np.nan_to_num(abstract.STDDEV(ohlc)[limit:]).tolist())
     return output

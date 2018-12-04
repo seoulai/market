@@ -20,7 +20,8 @@ $(document).ready(function() {
         data.rank[i].profit +
         "</td></tr>"
     }
-    drawBasic(data.prices)
+    if (google !== undefined)
+        drawBasic(data.prices)
     $("#rank").html(rank_string)
     var sell_price = data.orderbook.sell_price
     var old_sell_price = parseInt(
