@@ -52,7 +52,6 @@ $(document).ready(function() {
       price: price,
       quantity: q < 0 ? 0 : q
     }
-    console.log(data)
 
     $.ajax({
       dataType: "json",

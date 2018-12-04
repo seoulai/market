@@ -16,7 +16,7 @@ envs = json.loads(codecs.open(os.path.join(
 apt_requirements = [
     "curl",
     "git",
-    "python3-dev",
+    "python3.6-dev",
     "python3-pip",
     "build-essential",
     "python3-setuptools",
@@ -38,12 +38,13 @@ def prod():
         envs["REMOTE_HOST_SSH"]
     ]
     env.branch = "master"
+    env.key_filename = "/home/hcinyoung/.ssh/seoulai_market.pem"
 
 
 def deploy():
     _get_latest_source(env.branch)
-    _update_env_api(env.branch)
-    _restart_api(env.branch)
+    _update_env_db(env.branch)
+    _restart(env.branch)
 
 
 @_contextmanager
@@ -59,8 +60,14 @@ def _userpathenv():
         yield
 
 
+@_contextmanager
+def _cd_project(project_dir):
+    with cd(project_dir):
+        yield
+
+
 def _get_latest_apt():
-    sudo("apt-get update")
+    sudo("apt update")
 
 
 def _install_apt_requirements(apt_requirements):
@@ -74,7 +81,7 @@ def _make_virtualenv():
     if not exists("~/.virtualenvs"):
         script = """# python virtualenv settings
 export WORKON_HOME=~/.virtualenvs
-export VIRTUALENVWRAPPER_PYTHON="$(command which python3)"
+export VIRTUALENVWRAPPER_PYTHON="$(command which python3.6)"
 source /usr/local/bin/virtualenvwrapper.sh
 """
         run("mkdir ~/.virtualenvs")
@@ -93,13 +100,14 @@ def _get_latest_source(branch):
     api_project_folder = _set_path(branch)
 
     if exists(api_project_folder + "/.git"):
+        print("??")
         run("cd %s && git pull origin %s" % (api_project_folder, branch))
     else:
         run("git clone -b %s %s %s" %
             (branch, envs["API_REPO_URL"], api_project_folder))
 
 
-def _update_env_api(branch):
+def _update_env_db(branch):
     api_project_folder = _set_path(branch)
     if not exists(api_project_folder + "/venv"):
         run("cd %s && virtualenv venv -p /usr/bin/python3.6" %
@@ -112,7 +120,7 @@ def _update_env_api(branch):
         run("pip install -r requirements.txt")
 
 
-def _restart_api(branch):
+def _restart(branch):
     api_project_folder = _set_path(branch)
     with _virtualenv(api_project_folder):
         run("python run.py")
