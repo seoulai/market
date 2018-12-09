@@ -253,6 +253,7 @@ def _get_orderbook(n=1):
                     ask_size=result.ask_size.tolist(),
                     bid_size=result.bid_size.tolist())
 
+
 def _get_orderbook_by_tick(n=1):
     sql = """
     select ask_price, bid_price, ask_size, bid_size
@@ -268,6 +269,7 @@ def _get_orderbook_by_tick(n=1):
                     bid_price=result.bid_price.tolist(),
                     ask_size=result.ask_size.tolist(),
                     bid_size=result.bid_size.tolist())
+
 
 def _get_recent_price_vol(n=1):
     sql = """
@@ -287,6 +289,7 @@ def _get_recent_price_vol(n=1):
         return dict(price=result.cur_price.tolist(),
                     volume=result.cur_volume.tolist())
 
+
 def _get_recent_price_vol_by_tick(n=1):
     sql = """
     select trade_price as price, trade_volume as volume
@@ -301,6 +304,7 @@ def _get_recent_price_vol_by_tick(n=1):
     else:
         return dict(price=result.cur_price.tolist(),
                     volume=result.cur_volume.tolist())
+
 
 def _get_prices():
     # this data for main UI
