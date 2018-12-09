@@ -4,7 +4,7 @@ from threading import Thread, Event
 import json
 from time import sleep
 from market import app
-from market.api import _get_prices
+from market.api import _get_prices, _get_avg_buy
 from market.model import Agents, ProxyOrderBook
 from market.orderbook import OrderbookThread
 
@@ -36,7 +36,8 @@ class UIThread(Thread):
                 ).all()],
                 orderbook=ProxyOrderBook.query.order_by(
                     ProxyOrderBook.timestamp.desc()).first()._asdict(),
-                prices=_get_prices()
+                prices=_get_prices(),
+                avg_buys=_get_avg_buy()
             )
             socketio.emit("leaderboard",
                           {"data": json.dumps(data)},

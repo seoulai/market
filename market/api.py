@@ -33,7 +33,7 @@ def trade():
         agent = _add_agent(agent_id)
 
     _conclude(agent, "KRW-BTC", int(decision), float(quantity), int(price))
-    # agent = _get_agent(agent_id)
+    print(_get_avg_buy())
     return jsonify()
 
 
@@ -54,9 +54,9 @@ def reset():
     agent_data = _add_agent(agent_id)
     if agent_data:
         obs = dict(
-            order_book=_get_orderbook(),
-            **_get_recent_price_vol(),
-            statistics=_get_statistics(n=1)
+            order_book=_get_orderbook_by_tick(),
+            trade=_get_recent_price_vol_by_tick(),
+            statistics=_get_statistics()
         )
 
         obs.update(agent_data._asdict())
@@ -78,8 +78,8 @@ def scrap():
         pass
 
     history = dict(
-        **_get_orderbook(n=n),
-        **_get_recent_price_vol(n=n),
+        **_get_orderbook_by_tick(n=n),
+        **_get_recent_price_vol_by_tick(n=n),
         **_get_statistics(n=n,
                           start_time=start_time,
                           end_time=end_time)
@@ -131,8 +131,8 @@ def _conclude(
     ccld_qty = trad_qty
 
     next_obs = dict(
-        order_book=_get_orderbook(),
-        **_get_recent_price_vol(),
+        order_book=_get_orderbook_by_tick(),
+        trade=_get_recent_price_vol_by_tick(),
         statistics=_get_statistics()
     )
     cash = agent.cash
@@ -159,7 +159,8 @@ def _conclude(
             return next_obs, rewards, done, info
         asset_qty = round((asset_qty - ccld_qty), BASE)
 
-    cur_price = _get_recent_price_vol()["cur_price"]
+    # TODO: is cur_price correct?
+    cur_price = _get_recent_price_vol_by_tick()["price"]
     asset_val = asset_qty * cur_price
     next_portfolio_val = round((cash + asset_val), BASE)
 
@@ -208,25 +209,28 @@ def _add_agent(agent_id):
     return new_agent
 
 
-def _get_avg_buy(agent_name):
+def _get_avg_buy():
     sql = """
-    select sum(trade_price*trade_qty)/sum(trade_qty) as avg_buy
+    select a.name as agent_id, sum(t.trade_price*t.trade_qty)/sum(t.trade_qty) as avg_buy
     from (
         select agent_id
             , trade_price
+            , trade_decision
             , CASE
-                WHEN trace_decision = 'buy'  THEN trade_qty
+                WHEN trade_decision = 'buy'  THEN trade_qty
                 ELSE trade_qty * (-1)
             END as trade_qty
             , ts
-    ) trade_history
-    where agent_id=(select agent_id from agents where name='{name}')
-      and trade_decision='buy'
-      and ts > (select asset_qtys_zero_updated from agents where name='{name}')
-    group by agent_id
-    """.format(name=agent_name)
-    result = pd.read_sql(sql, db.engine)
-    return result.to_dict(orient="record")[0]
+        from trade_history
+    ) t
+    join agents a on t.agent_id=a.id
+    where
+        t.trade_decision='buy'
+        and t.ts > asset_qtys_zero_updated
+    group by a.name
+    """
+    result = pd.read_sql(sql, db.engine).set_index("agent_id")
+    return result.to_dict(orient="index")
 
 
 def _get_orderbook(n=1):
@@ -249,6 +253,21 @@ def _get_orderbook(n=1):
                     ask_size=result.ask_size.tolist(),
                     bid_size=result.bid_size.tolist())
 
+def _get_orderbook_by_tick(n=1):
+    sql = """
+    select ask_price, bid_price, ask_size, bid_size
+    from proxy_order_book
+    order by timestamp desc
+    limit {limit}
+    """.format(limit=n)
+    result = pd.read_sql(sql, db.engine)
+    if n == 1:
+        return result.to_dict(orient="record")[0]
+    else:
+        return dict(ask_price=result.ask_price.tolist(),
+                    bid_price=result.bid_price.tolist(),
+                    ask_size=result.ask_size.tolist(),
+                    bid_size=result.bid_size.tolist())
 
 def _get_recent_price_vol(n=1):
     sql = """
@@ -261,13 +280,27 @@ def _get_recent_price_vol(n=1):
     limit {limit}
     """.format(limit=n, tick=3 * 60)
     result = pd.read_sql(sql, db.engine)
-    result.cur_price = result.cur_price.astype(float)  # .astype(int)
+    result.price = result.price.astype(int)  # .astype(int)
     if n == 1:
         return result.to_dict("record")[0]
     else:
-        return dict(cur_price=result.cur_price.tolist(),
-                    cur_volume=result.cur_volume.tolist())
+        return dict(price=result.cur_price.tolist(),
+                    volume=result.cur_volume.tolist())
 
+def _get_recent_price_vol_by_tick(n=1):
+    sql = """
+    select trade_price as price, trade_volume as volume
+    from upbit_trade_history
+    order by trade_timestamp desc
+    limit {limit}
+    """.format(limit=n)
+    result = pd.read_sql(sql, db.engine)
+    result.price = result.price.astype(int)
+    if n == 1:
+        return result.to_dict("record")[0]
+    else:
+        return dict(price=result.cur_price.tolist(),
+                    volume=result.cur_volume.tolist())
 
 def _get_prices():
     # this data for main UI

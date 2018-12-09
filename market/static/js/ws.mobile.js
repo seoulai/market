@@ -9,9 +9,10 @@ $(document).ready(function() {
     data = JSON.parse(msg.data)
     for (var i = 0; i < data.rank.length; i++) {
       if ($("#agent_id").val() === data.rank[i].name) {
-        $("#cash").text(data.rank[i].cash.toLocaleString())
+        $("#avg_buy").text(data.avg_buys[data.rank[i].name].avg_buy.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}))
+        $("#cash").text(data.rank[i].cash.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}))
         $("#total_quantity").text(data.rank[i].asset_qtys.toLocaleString())
-        $("#total_portfolio").text(data.rank[i].portfolio_val.toLocaleString())
+        $("#total_portfolio").text(data.rank[i].portfolio_val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}))
         $("#score").text(data.rank[i].profit)
       }
     }
