@@ -125,7 +125,6 @@ def _conclude(
     done = False
     info = {}
     BASE = Constants.BASE
-    FEE_BASE = Constants.FEE_BASE
 
     ccld_price = trad_price
     ccld_qty = trad_qty
@@ -139,7 +138,7 @@ def _conclude(
     asset_qty = agent.asset_qtys
     portfolio_val = agent.portfolio_rets_val
     trading_amt = ccld_price * ccld_qty
-    fee = round(ccld_price * ccld_qty * fee_rt, FEE_BASE)
+    fee = round(ccld_price * ccld_qty * fee_rt, BASE)
 
     if decision == Constants.BUY:
         # after buying, cash will decrease.
