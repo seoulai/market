@@ -55,8 +55,7 @@ def reset():
     if agent_data:
         obs = dict(
             order_book=_get_orderbook_by_tick(),
-            trade=_get_recent_price_vol_by_tick(),
-            statistics=_get_statistics()
+            trade=_get_recent_price_vol_by_tick()
         )
 
         obs.update(agent_data._asdict())
@@ -67,24 +66,14 @@ def reset():
 
 @api_route.route("/scrap", methods=["GET"])
 def scrap():
-    start_time = request.args.get("start_time")
-    end_time = request.args.get("end_time")
-    n = request.args.get("n", 30)
+    n = request.args.get("n", 2000)
     n = int(n)
-    if n < 0:
-        return make_response(jsonify({"msg": "n should be positive"}), 400)
-
-    if start_time == "hh:mm:ss" and end_time == "hh:mm:ss":
-        pass
 
     history = dict(
-        **_get_orderbook_by_tick(n=n),
-        **_get_recent_price_vol_by_tick(n=n),
-        **_get_statistics(n=n,
-                          start_time=start_time,
-                          end_time=end_time)
+        order_book=_get_orderbook_by_tick(n=n),
+        trade=_get_recent_price_vol_by_tick(n=n)
     )
-    # pd.DataFrame(history).to_csv("upbit_scrap3_%s.csv" % n, index=False)
+    pd.DataFrame(history).to_csv("upbit_scrap_%s.csv" % n, index=False)
     return jsonify(history=history)
 
 
@@ -131,8 +120,7 @@ def _conclude(
 
     next_obs = dict(
         order_book=_get_orderbook_by_tick(),
-        trade=_get_recent_price_vol_by_tick(),
-        statistics=_get_statistics()
+        trade=_get_recent_price_vol_by_tick()
     )
     cash = agent.cash
     asset_qty = agent.asset_qtys
@@ -158,8 +146,7 @@ def _conclude(
             return next_obs, rewards, done, info
         asset_qty = round((asset_qty - ccld_qty), BASE)
 
-    # TODO: is cur_price correct?
-    cur_price = _get_recent_price_vol_by_tick()["price"]
+    cur_price = next_obs["trade"]["price"][0]
     asset_val = asset_qty * cur_price
     next_portfolio_val = round((cash + asset_val), BASE)
 
@@ -169,7 +156,7 @@ def _conclude(
     agent.portfolio_rets_val = next_portfolio_val
     if (asset_qty == 0.):
         agent.asset_qtys_zero_updated = datetime.utcnow()
-    transaction = TradeHistory(agent.id, decision, ccld_price, ccld_qty)
+    transaction = TradeHistory(agent.id, decision, ccld_price, ccld_qty, next_portfolio_val)
     db.session.add(transaction)
     db.session.commit()  # update agent's asset, portfolio
 
@@ -253,9 +240,9 @@ def _get_orderbook(n=1):
                     bid_size=result.bid_size.tolist())
 
 
-def _get_orderbook_by_tick(n=1):
+def _get_orderbook_by_tick(n=200):
     sql = """
-    select ask_price, bid_price, ask_size, bid_size
+    select timestamp, ask_price, bid_price, ask_size, bid_size
     from proxy_order_book
     order by timestamp desc
     limit {limit}
@@ -264,10 +251,26 @@ def _get_orderbook_by_tick(n=1):
     if n == 1:
         return result.to_dict(orient="record")[0]
     else:
-        return dict(ask_price=result.ask_price.tolist(),
+        return dict(timestamp=result.timestamp.tolist(),
+                    ask_price=result.ask_price.tolist(),
                     bid_price=result.bid_price.tolist(),
                     ask_size=result.ask_size.tolist(),
                     bid_size=result.bid_size.tolist())
+
+
+def _get_orderbook_n_hour_bf(h=1):
+    sql = """
+    select timestamp, ask_price, bid_price, ask_size, bid_size
+    from proxy_order_book
+    where timestamp > ((
+        select max(trade_timestamp) from upbit_trade_history) - INTERVAL '{h} HOUR')
+    """.format(h=h)
+    result = pd.read_sql(sql, db.engine)
+    return dict(timestamp=result.timestamp.tolist(),
+                ask_price=result.ask_price.tolist(),
+                bid_price=result.bid_price.tolist(),
+                ask_size=result.ask_size.tolist(),
+                bid_size=result.bid_size.tolist())
 
 
 def _get_recent_price_vol(n=1):
@@ -289,9 +292,13 @@ def _get_recent_price_vol(n=1):
                     volume=result.cur_volume.tolist())
 
 
-def _get_recent_price_vol_by_tick(n=1):
+def _get_recent_price_vol_by_tick(n=200):
     sql = """
-    select trade_price as price, trade_volume as volume
+    select trade_timestamp as timestamp,
+        trade_price as price,
+        trade_volume as volume,
+        sequential_id as sid,
+        ask_bid
     from upbit_trade_history
     order by trade_timestamp desc
     limit {limit}
@@ -301,8 +308,27 @@ def _get_recent_price_vol_by_tick(n=1):
     if n == 1:
         return result.to_dict("record")[0]
     else:
-        return dict(price=result.cur_price.tolist(),
-                    volume=result.cur_volume.tolist())
+        return dict(timestamp=result.timestamp.tolist(),
+                    price=result.price.tolist(),
+                    volume=result.volume.tolist(),
+                    sid=result.sid.tolist(),
+                    ask_bid=result.ask_bid.tolist())
+
+
+def _get_recent_price_vol_n_hour_bf(h=2):
+    sql = """
+    select trade_timestamp as timestamp, trade_price as price, trade_volume as volume,
+        sequential_id as sid, ask_bid
+    from upbit_trade_history
+    where trade_timestamp > ((
+        select max(trade_timestamp) from upbit_trade_history) - INTERVAL '{h} HOUR')
+    """.format(h=h)
+    result = pd.read_sql(sql, db.engine)
+    return dict(timestamp=result.timestamp.tolist(),
+                price=result.price.tolist(),
+                volume=result.volume.tolist(),
+                sid=result.sid.tolist(),
+                ask_bid=result.ask_bid.tolist())
 
 
 def _get_prices():

@@ -37,6 +37,12 @@ class Agents(db.Model):
                     profit=round(profit_ratio, Constants.BASE))
 
 
+class PortfolioLog(db.Model):
+    timestamp = db.Column(db.DateTime, primary_key=True, default=datetime.utcnow)
+    id = db.Column(db.Integer, nullable=False)
+    portfolio_rets_val = db.Column(db.Float, nullable=False)
+
+
 class ProxyOrderBook(db.Model):
     """ Realtime orderbook
     ask/bid size is replaced to 999999999999
@@ -75,14 +81,18 @@ class UpbitTradeHistory(db.Model):
     trade_timestamp = db.Column(db.DateTime)
     trade_price = db.Column(db.Integer)
     trade_volume = db.Column(db.Float)
+    sequential_id = db.Column(db.BigInteger)
+    ask_bid = db.Column(db.String(3))
 
     def __init__(self, obj):
         self.trade_date = obj["tradeDate"]
         self.trade_time = obj["tradeTime"]
         self.trade_timestamp = datetime.fromtimestamp(
-            obj["tradeTimestamp"] / 1000)
+            obj["timestamp"] / 1000)
         self.trade_price = obj["tradePrice"]
         self.trade_volume = obj["tradeVolume"]
+        self.sequential_id = obj["sequentialId"]
+        self.ask_bid = obj["askBid"]
 
     def _aslist(self):
         return [self.trade_timestamp.timestamp(),
@@ -99,10 +109,12 @@ class TradeHistory(db.Model):
     trade_decision = db.Column(db.String)
     trade_price = db.Column(db.Float)
     trade_qty = db.Column(db.Float)
+    portfolio_rets_val = db.Column(db.Float, nullable=False)
 
-    def __init__(self, agent_id, decision, price, qty):
+    def __init__(self, agent_id, decision, price, qty, portfolio_rets_val):
         # self.ts = obj["tradeDate"]
         self.agent_id = agent_id
         self.trade_decision = Constants.DECISION[decision]
         self.trade_price = price
         self.trade_qty = qty
+        self.portfolio_rets_val = portfolio_rets_val
