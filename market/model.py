@@ -109,10 +109,12 @@ class TradeHistory(db.Model):
     trade_decision = db.Column(db.String)
     trade_price = db.Column(db.Float)
     trade_qty = db.Column(db.Float)
+    portfolio_rets_val = db.Column(db.Float, nullable=False)
 
-    def __init__(self, agent_id, decision, price, qty):
+    def __init__(self, agent_id, decision, price, qty, portfolio_rets_val):
         # self.ts = obj["tradeDate"]
         self.agent_id = agent_id
         self.trade_decision = Constants.DECISION[decision]
         self.trade_price = price
         self.trade_qty = qty
+        self.portfolio_rets_val = portfolio_rets_val 

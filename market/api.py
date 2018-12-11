@@ -9,7 +9,7 @@ import pandas as pd
 from datetime import datetime
 from talib import abstract
 from market.base import fee_rt, Constants
-from market.model import Agents, TradeHistory, PortfolioLog
+from market.model import Agents, TradeHistory
 from market import db
 
 api_route = Blueprint(
@@ -157,8 +157,8 @@ def _conclude(
     agent.portfolio_rets_val = next_portfolio_val
     if (asset_qty == 0.):
         agent.asset_qtys_zero_updated = datetime.utcnow()
-    transaction = TradeHistory(agent.id, decision, ccld_price, ccld_qty)
-    plog = PortfolioLog(id=agent.id, portfolio_rets_val=agent.portfolio_rets_val)
+    
+    transaction = TradeHistory(agent.id, decision, ccld_price, ccld_qty, next_portfolio_val)
     db.session.add(transaction)
     db.session.add(plog)
     db.session.commit()  # update agent's asset, portfolio
