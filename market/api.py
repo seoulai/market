@@ -11,6 +11,7 @@ from talib import abstract
 from market.base import fee_rt, Constants
 from market.model import Agents, TradeHistory
 from market import db
+from itertools import islice
 
 api_route = Blueprint(
     "api_route",
@@ -66,15 +67,40 @@ def reset():
 
 @api_route.route("/scrap", methods=["GET"])
 def scrap():
-    n = request.args.get("n", 2000)
+    n = request.args.get("n", 5)
+    window = request.args.get("window", 2)
     n = int(n)
+    window = int(window)
 
     history = dict(
         order_book=_get_orderbook_by_tick(n=n),
         trade=_get_recent_price_vol_by_tick(n=n)
     )
-    pd.DataFrame(history).to_csv("upbit_scrap_%s.csv" % n, index=False)
-    return jsonify(history=history)
+
+    history_list = []
+    df1 = pd.DataFrame(history["order_book"])
+    df2 = pd.DataFrame(history["trade"])
+    for start, end in _window(range(n), n=window):
+        df1_tmp = df1.loc[start:end]
+        df2_tmp = df2.loc[start:end]
+        history_list.append(
+            dict(
+                order_book=dict(
+                    timestamp=df1_tmp.timestamp.tolist(),
+                    ask_price=df1_tmp.ask_price.tolist(),
+                    bid_price=df1_tmp.bid_price.tolist(),
+                    ask_size=df1_tmp.ask_size.tolist(),
+                    bid_size=df1_tmp.bid_size.tolist()),
+                trade=dict(
+                    timestamp=df2_tmp.timestamp.tolist(),
+                    price=df2_tmp.price.tolist(),
+                    volume=df2_tmp.volume.tolist(),
+                    sid=df2_tmp.sid.tolist(),
+                    ask_bid=df2_tmp.ask_bid.tolist())))
+    del df1
+    del df2
+    del history
+    return jsonify(history_list)
 
 
 @api_route.route("/step", methods=["POST"])
@@ -394,3 +420,13 @@ def _get_statistics(n=1, start_time=None, end_time=None):
         rsi=np.nan_to_num(abstract.RSI(ohlc)[limit:]).tolist(),
         stddev=np.nan_to_num(abstract.STDDEV(ohlc)[limit:]).tolist())
     return output
+
+
+def _window(seq, n=200):
+        it = iter(seq)
+        result = tuple(islice(it, n))
+        if len(result) == n:
+            yield min(result), max(result)
+        for elem in it:
+            result = result[1:] + (elem,)
+            yield min(result), max(result)
