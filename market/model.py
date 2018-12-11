@@ -117,4 +117,4 @@ class TradeHistory(db.Model):
         self.trade_decision = Constants.DECISION[decision]
         self.trade_price = price
         self.trade_qty = qty
-        self.portfolio_rets_val = portfolio_rets_val 
+        self.portfolio_rets_val = portfolio_rets_val

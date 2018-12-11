@@ -157,10 +157,8 @@ def _conclude(
     agent.portfolio_rets_val = next_portfolio_val
     if (asset_qty == 0.):
         agent.asset_qtys_zero_updated = datetime.utcnow()
-    
     transaction = TradeHistory(agent.id, decision, ccld_price, ccld_qty, next_portfolio_val)
     db.session.add(transaction)
-    db.session.add(plog)
     db.session.commit()  # update agent's asset, portfolio
 
     return_amt = round((next_portfolio_val - portfolio_val), BASE)
