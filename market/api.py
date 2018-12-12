@@ -141,40 +141,43 @@ def _conclude(
     info = {}
     BASE = Constants.BASE
 
-    ccld_price = trad_price
+    ccld_price = int(trad_price)
     ccld_qty = trad_qty
 
     next_obs = dict(
         order_book=_get_orderbook_by_tick(),
         trade=_get_recent_price_vol_by_tick()
     )
+
     cash = agent.cash
     asset_qty = agent.asset_qtys
     portfolio_val = agent.portfolio_rets_val
-    trading_amt = ccld_price * ccld_qty
-    fee = round(ccld_price * ccld_qty * fee_rt, BASE)
+
+    trading_amt = round(ccld_price * ccld_qty, BASE)
+    fee = round(trading_amt * fee_rt, BASE)    # fee = trading_amt x 0.0005
 
     if decision == Constants.BUY:
-        # after buying, cash will decrease.
-        cash = round((cash - trading_amt - fee), BASE)
-        # quantity of asset will increase.
-        asset_qty = round((asset_qty + ccld_qty), BASE)
-
         if cash < (trading_amt + fee):
             next_obs.update(agent._asdict())
             return next_obs, rewards, done, info
+
+        asset_val = round(trading_amt + fee, BASE)
+        cash = round(cash - asset_val, BASE)    # after buying, cash will decrease.
+        asset_qty = round(asset_qty + ccld_qty, BASE)
+
     elif decision == Constants.SELL:
-        # after selling, cash will increase.
-        cash = round((cash + trading_amt - fee), BASE)
-        # quantity of asset will decrease.
         if asset_qty < ccld_qty:
             next_obs.update(agent._asdict())
             return next_obs, rewards, done, info
-        asset_qty = round((asset_qty - ccld_qty), BASE)
+
+        asset_qty = round(asset_qty - ccld_qty, BASE)    # quantity of asset will decrease.
+        asset_val = round(trading_amt - fee, BASE)
+        cash = round(cash + asset_val, BASE)    # after selling, cash will increase.
+
 
     cur_price = next_obs["trade"]["price"][0]
-    asset_val = asset_qty * cur_price
-    next_portfolio_val = round((cash + asset_val), BASE)
+    asset_val = round(asset_qty * cur_price, BASE)
+    next_portfolio_val = round(cash + asset_val, BASE)
 
     # update portfolio_val
     agent.cash = cash
@@ -186,22 +189,39 @@ def _conclude(
     db.session.add(transaction)
     db.session.commit()  # update agent's asset, portfolio
 
+    # we just observe state_size time series data.
+    next_obs.update(agent._asdict())
+
     return_amt = round((next_portfolio_val - portfolio_val), BASE)
-    return_per = round(
-        (next_portfolio_val / float(portfolio_val) - 1) * 100.0, BASE)
+    return_per = (return_amt/portfolio_val)*100.0
+    return_per = int(return_per*10000)/10000.0
     return_sign = np.sign(return_amt)
-    score_amt = round((next_portfolio_val - 100_000_000), BASE)
-    score = round(((next_portfolio_val / 100_000_000) - 1) * 100, BASE)
+    buy_ccld_price = round(ccld_price * (1 + self.fee_rt), BASE)
+    sell_ccld_price = round(ccld_price * (1 - self.fee_rt), BASE)
+    buy_change_price = round(cur_price - buy_ccld_price, BASE)
+    sell_change_price = round(cur_price - sell_ccld_price, BASE)
+    change_price = cur_price-ccld_price
+    change_price_sign = np.sign(change_price)
+    hit = 1.0 if (decision == Constants.BUY and change_price_sign > 0) or (decision == Constants.SELL and change_price_sign < 0) else 0.0
+    real_hit = 1.0 if (decision == Constants.BUY and np.sign(buy_change_price) > 0) or (decision == Constants.SELL and np.sign(sell_change_price) < 0) else 0.0
+    score_amt = round(next_portfolio_val - 100000000.0, BASE)
+    score = (score_amt/100000000.0)*100.0
+    score = int(score*10000)/10000.0
+
 
     rewards = dict(
         return_amt=return_amt,
+        fee=fee,
         return_per=return_per,
         return_sign=return_sign,
+        hit=hit,
+        real_hit=real_hit,
         score_amt=score_amt,
-        score=score)
+        score=score,
+        )
 
-    # we just observe state_size time series data.
-    next_obs.update(agent._asdict())
+    # 8. Time sleep
+    # time.sleep(0.3)
 
     return next_obs, rewards, done, info
 
