@@ -196,8 +196,8 @@ def _conclude(
     return_per = (return_amt/portfolio_val)*100.0
     return_per = int(return_per*10000)/10000.0
     return_sign = np.sign(return_amt)
-    buy_ccld_price = round(ccld_price * (1 + self.fee_rt), BASE)
-    sell_ccld_price = round(ccld_price * (1 - self.fee_rt), BASE)
+    buy_ccld_price = round(ccld_price * (1 + fee_rt), BASE)
+    sell_ccld_price = round(ccld_price * (1 - fee_rt), BASE)
     buy_change_price = round(cur_price - buy_ccld_price, BASE)
     sell_change_price = round(cur_price - sell_ccld_price, BASE)
     change_price = cur_price-ccld_price
