@@ -28,13 +28,16 @@ class Agents(db.Model):
                 "sharp": self.portfolio_rets_sharp})
 
     def _asrank(self):
+        cur_price = UpbitTradeHistory.query.first().trade_price
+        asset_val = round(self.asset_qtys * cur_price, Constants.BASE)
+        portfolio_val = round(self.cash + asset_val, Constants.BASE)
 
-        profit_ratio = ((self.portfolio_rets_val / 100_000_000) - 1) * 100.0
+        profit_ratio = ((portfolio_val / 100_000_000) - 1) * 100.0
         return dict(name=self.name,
                     cash=self.cash,
                     asset_qtys=self.asset_qtys,
-                    portfolio_val=self.portfolio_rets_val,
-                    profit=round(profit_ratio, Constants.BASE))
+                    portfolio_val=portfolio_val,
+                    profit=int(profit_ratio * 10_000) / 10000.0)
 
 
 class PortfolioLog(db.Model):
