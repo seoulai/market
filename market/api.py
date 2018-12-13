@@ -65,15 +65,15 @@ def reset():
         return make_response(jsonify({"msg": "agent is not registered"}), 400)
 
 
-@api_route.route("/scrap", methods=["GET"])
-def scrap():
+@api_route.route("/scrap_windows", methods=["GET"])
+def scrap_windows():
     n = request.args.get("n", 5)
     window = request.args.get("window", 2)
     n = int(n)
     window = int(window)
 
     history = dict(
-        order_book=_get_orderbook_by_tick(n=1),
+        order_book=_get_orderbook_by_tick(n=n),
         trade=_get_recent_price_vol_by_tick(n=n)
     )
 
@@ -101,6 +101,16 @@ def scrap():
     del df2
     del history
     return jsonify(history_list)
+
+
+@api_route.route("/scrap", methods=["GET"])
+def scrap():
+    history = dict(
+        order_book=_get_orderbook_by_tick(n=1),
+        trade=_get_recent_price_vol_by_tick(n=200)
+    )
+
+    return jsonify(history)
 
 
 @api_route.route("/step", methods=["POST"])
@@ -154,7 +164,8 @@ def _conclude(
     portfolio_val = agent.portfolio_rets_val
 
     trading_amt = round(ccld_price * ccld_qty, BASE)
-    fee = round(trading_amt * fee_rt, BASE)    # fee = trading_amt x 0.0005
+    # fee = trading_amt x 0.0005
+    fee = round(trading_amt * fee_rt, BASE)
 
     if decision == Constants.BUY:
         if cash < (trading_amt + fee):
@@ -162,18 +173,19 @@ def _conclude(
             return next_obs, rewards, done, info
 
         asset_val = round(trading_amt + fee, BASE)
-        cash = round(cash - asset_val, BASE)    # after buying, cash will decrease.
+        # after buying, cash will decrease.
+        cash = round(cash - asset_val, BASE)
         asset_qty = round(asset_qty + ccld_qty, BASE)
 
     elif decision == Constants.SELL:
         if asset_qty < ccld_qty:
             next_obs.update(agent._asdict())
             return next_obs, rewards, done, info
-
-        asset_qty = round(asset_qty - ccld_qty, BASE)    # quantity of asset will decrease.
+        # quantity of asset will decrease.
+        asset_qty = round(asset_qty - ccld_qty, BASE)
         asset_val = round(trading_amt - fee, BASE)
-        cash = round(cash + asset_val, BASE)    # after selling, cash will increase.
-
+        # after selling, cash will increase.
+        cash = round(cash + asset_val, BASE)
 
     cur_price = next_obs["trade"]["price"][0]
     asset_val = round(asset_qty * cur_price, BASE)
@@ -187,27 +199,29 @@ def _conclude(
         agent.asset_qtys_zero_updated = datetime.utcnow()
     transaction = TradeHistory(agent.id, decision, ccld_price, ccld_qty, next_portfolio_val)
     db.session.add(transaction)
-    db.session.commit()  # update agent's asset, portfolio
+    # update agent's asset, portfolio
+    db.session.commit()
 
     # we just observe state_size time series data.
     next_obs.update(agent._asdict())
 
     return_amt = round((next_portfolio_val - portfolio_val), BASE)
-    return_per = (return_amt/portfolio_val)*100.0
-    return_per = int(return_per*10000)/10000.0
+    return_per = (return_amt / portfolio_val) * 100.0
+    return_per = int(return_per * 10000) / 10000.0
     return_sign = np.sign(return_amt)
     buy_ccld_price = round(ccld_price * (1 + fee_rt), BASE)
     sell_ccld_price = round(ccld_price * (1 - fee_rt), BASE)
     buy_change_price = round(cur_price - buy_ccld_price, BASE)
     sell_change_price = round(cur_price - sell_ccld_price, BASE)
-    change_price = cur_price-ccld_price
+    change_price = cur_price - ccld_price
     change_price_sign = np.sign(change_price)
-    hit = 1.0 if (decision == Constants.BUY and change_price_sign > 0) or (decision == Constants.SELL and change_price_sign < 0) else 0.0
-    real_hit = 1.0 if (decision == Constants.BUY and np.sign(buy_change_price) > 0) or (decision == Constants.SELL and np.sign(sell_change_price) < 0) else 0.0
+    hit = 1.0 if (decision == Constants.BUY and change_price_sign > 0) \
+        or (decision == Constants.SELL and change_price_sign < 0) else 0.0
+    real_hit = 1.0 if (decision == Constants.BUY and np.sign(buy_change_price) > 0) \
+        or (decision == Constants.SELL and np.sign(sell_change_price) < 0) else 0.0
     score_amt = round(next_portfolio_val - 100000000.0, BASE)
-    score = (score_amt/100000000.0)*100.0
-    score = int(score*10000)/10000.0
-
+    score = (score_amt / 100000000.0) * 100.0
+    score = int(score * 10000) / 10000.0
 
     rewards = dict(
         return_amt=return_amt,
@@ -217,8 +231,7 @@ def _conclude(
         hit=hit,
         real_hit=real_hit,
         score_amt=score_amt,
-        score=score,
-        )
+        score=score)
 
     # 8. Time sleep
     # time.sleep(0.3)
