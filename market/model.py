@@ -29,10 +29,12 @@ class Agents(db.Model):
 
     def _asrank(self):
         cur_price = UpbitTradeHistory.query.first().trade_price
+        
         asset_val = round(self.asset_qtys * cur_price, Constants.BASE)
         portfolio_val = round(self.cash + asset_val, Constants.BASE)
+        print(cur_price, asset_val, portfolio_val)
 
-        profit_ratio = ((portfolio_val / 100_000_000) - 1) * 100.0
+        profit_ratio = ((portfolio_val / 100000000.0) - 1) * 100.0
         return dict(name=self.name,
                     cash=self.cash,
                     asset_qtys=self.asset_qtys,
