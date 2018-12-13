@@ -33,9 +33,8 @@ def trade():
     if agent is None:
         agent = _add_agent(agent_id)
 
-    _conclude(agent, "KRW-BTC", int(decision), float(quantity), int(price))
-    print(_get_avg_buy())
-    return jsonify()
+    _, _, _, info = _conclude(agent, "KRW-BTC", int(decision), float(quantity), int(price))
+    return jsonify(info)
 
 
 @api_route.route("/select", methods=["GET"])
@@ -170,6 +169,7 @@ def _conclude(
     if decision == Constants.BUY:
         if cash < (trading_amt + fee):
             next_obs.update(agent._asdict())
+            info["error"] = "Not enough money"
             return next_obs, rewards, done, info
 
         asset_val = round(trading_amt + fee, BASE)
@@ -180,6 +180,7 @@ def _conclude(
     elif decision == Constants.SELL:
         if asset_qty < ccld_qty:
             next_obs.update(agent._asdict())
+            info["error"] = "Not enough quantity"
             return next_obs, rewards, done, info
         # quantity of asset will decrease.
         asset_qty = round(asset_qty - ccld_qty, BASE)

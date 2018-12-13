@@ -59,7 +59,12 @@ $(document).ready(function() {
       dataType: "json",
       url: "/api/m/trade",
       data: data,
-      success: function(responseData) {}
+      success: function(responseData) {
+        console.log(responseData)
+        for (var key in responseData) {
+          if (key === "error") alert(responseData[key]);
+        }
+      }
     })
   }
 
