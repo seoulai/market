@@ -73,7 +73,7 @@ def scrap():
     window = int(window)
 
     history = dict(
-        order_book=_get_orderbook_by_tick(n=n),
+        order_book=_get_orderbook_by_tick(n=1),
         trade=_get_recent_price_vol_by_tick(n=n)
     )
 
@@ -267,7 +267,7 @@ def _get_orderbook(n=1):
                     bid_size=result.bid_size.tolist())
 
 
-def _get_orderbook_by_tick(n=200):
+def _get_orderbook_by_tick(n=1):
     sql = """
     select timestamp, ask_price, bid_price, ask_size, bid_size
     from proxy_order_book

@@ -41,7 +41,7 @@ class OrderbookThread(Thread):
         if raw_data:
             body = json.loads(json.loads(raw_data)[0])
             if body["type"] == "crixOrderbook":
-                latest_orderbooks = body["orderbookUnits"][-1]
+                latest_orderbooks = body["orderbookUnits"][0]
                 latest_orderbooks["askSize"] = 999999999999
                 latest_orderbooks["bidSize"] = 999999999999
                 latest_orderbooks["timestamp"] = body["timestamp"]
