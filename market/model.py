@@ -1,6 +1,7 @@
 from market import db
 from datetime import datetime
 from market.base import Constants
+from sqlalchemy import desc
 
 
 class Agents(db.Model):
@@ -28,11 +29,9 @@ class Agents(db.Model):
                 "sharp": self.portfolio_rets_sharp})
 
     def _asrank(self):
-        cur_price = UpbitTradeHistory.query.first().trade_price
-        
+        cur_price = UpbitTradeHistory.query.order_by(desc(UpbitTradeHistory.trade_timestamp)).first().trade_price
         asset_val = round(self.asset_qtys * cur_price, Constants.BASE)
         portfolio_val = round(self.cash + asset_val, Constants.BASE)
-        print(cur_price, asset_val, portfolio_val)
 
         profit_ratio = ((portfolio_val / 100000000.0) - 1) * 100.0
         return dict(name=self.name,
